@@ -8,7 +8,7 @@ import {WebSocketServer,WebSocket} from 'ws';
 import {newRoom,newPlayer,reset,advance,snapshot,MAX} from '../worker/engine.mjs';
 
 const publicDir=fileURLToPath(new URL('../public/',import.meta.url));
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.glb':'model/gltf-binary','.json':'application/json'};
 const idle=()=>({forward:0,strafe:0,jump:false,parry:false,fire:[false,false,false]});
 const hash=token=>createHash('sha256').update(token).digest('hex');
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
@@ -47,6 +47,7 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
      if(ws.entry)fail('Você já está em uma sala.');
      const name=typeof m.name==='string'?m.name.trim().slice(0,18):'';
      if(!name)fail('Escolha um apelido.');if(m.classId!==undefined&&!Object.hasOwn(CLASSES,m.classId))fail('Classe inválida.');if(m.action==='create'&&m.mapId!==undefined&&!Object.hasOwn(MAPS,m.mapId))fail('Cenário inválido.');
+     if(m.bodyType!==undefined&&!['male','female'].includes(m.bodyType))fail('Personagem inválido.');
      if(typeof m.token!=='string'||!/^[a-zA-Z0-9-]{24,80}$/.test(m.token))fail('Chave de sessão inválida.');
      let entry,code;
      if(m.action==='create'){
@@ -55,10 +56,10 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
       entry={state:newRoom(code,now),connections:new Map(),disconnected:new Map(),lastUsed:now};entry.state.training=m.training===true;entry.state.mapId=m.mapId||'abbey';rooms.set(code,entry);
      }else{code=String(m.code||'').toUpperCase();entry=rooms.get(code);if(!entry)fail('Sala encerrada. Crie uma nova sala.',404);}
      const secret=hash(m.token);let p=entry.state.players.find(p=>p.hash===secret);
-     if(!p){if(m.id)fail('Sessão inválida.',401);if(entry.state.players.length>=MAX)fail('A sala já tem 3 jogadores.',409);if(!['lobby','finished'].includes(entry.state.phase))fail('A partida já começou.',409);const slot=[0,1,2].find(i=>!entry.state.players.some(p=>p.slot===i));p=newPlayer(randomUUID(),secret,name,slot,now);p.classId=m.classId||'mage';const profile=classOf(p.classId);Object.assign(p,{hp:profile.hp,maxHp:profile.hp,speed:profile.speed});entry.state.players.push(p);entry.state.host??=p.id;}
+     if(!p){if(m.id)fail('Sessão inválida.',401);if(entry.state.players.length>=MAX)fail('A sala já tem 3 jogadores.',409);if(!['lobby','finished'].includes(entry.state.phase))fail('A partida já começou.',409);const slot=[0,1,2].find(i=>!entry.state.players.some(p=>p.slot===i));p=newPlayer(randomUUID(),secret,name,slot,now);p.classId=m.classId||'mage';p.bodyType=m.bodyType||'male';const profile=classOf(p.classId);Object.assign(p,{hp:profile.hp,maxHp:profile.hp,speed:profile.speed});entry.state.players.push(p);entry.state.host??=p.id;}
      const prior=entry.connections.get(p.id);entry.connections.set(p.id,ws);if(prior&&prior!==ws){prior.entry=prior.player=null;prior.close(4001,'Sessão aberta em outra conexão');}
      ws.entry=entry;ws.player=p;p.seen=now;p.input=idle();entry.lastUsed=now;entry.disconnected.delete(p.id);
-     if(entry.state.training&&entry.state.players.length===1){for(let i=1;i<3;i++){const bot=newPlayer('bot-'+i,'',"Alvo "+i,i,now);bot.bot=true;entry.state.players.push(bot);}}result={id:p.id,token:m.token,room:view(entry)};
+     if(entry.state.training&&entry.state.players.length===1){for(let i=1;i<3;i++){const bot=newPlayer('bot-'+i,'',"Alvo "+i,i,now);bot.bot=true;bot.bodyType=i===1?'female':'male';bot.classId=i===1?'rogue':'knight';Object.assign(bot,{hp:classOf(bot.classId).hp,maxHp:classOf(bot.classId).hp,speed:classOf(bot.classId).speed});entry.state.players.push(bot);}}result={id:p.id,token:m.token,room:view(entry)};
     }else{
      const entry=ws.entry,p=ws.player;if(!entry||!p)fail('Entre em uma sala.',401);
      p.seen=now;entry.lastUsed=now;
@@ -68,6 +69,8 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
      }else if(m.action==='configure'){
       if(!['lobby','finished'].includes(entry.state.phase))fail('Escolha antes de começar a partida.',409);
       if(m.classId!==undefined&&!Object.hasOwn(CLASSES,m.classId))fail('Classe inválida.');
+      if(m.bodyType!==undefined&&!['male','female'].includes(m.bodyType))fail('Personagem inválido.');
+      if(m.bodyType!==undefined)p.bodyType=m.bodyType;
       if(m.mapId!==undefined){if(entry.state.host!==p.id)fail('Só o criador escolhe o cenário.',403);if(!Object.hasOwn(MAPS,m.mapId))fail('Cenário inválido.');}
       if(m.classId!==undefined){p.classId=m.classId;const profile=classOf(p.classId);Object.assign(p,{hp:profile.hp,maxHp:profile.hp,speed:profile.speed,cd:[0,0,0],input:idle(),burst:null,parry:0,parryCd:0});}
       if(m.mapId!==undefined)entry.state.mapId=m.mapId;

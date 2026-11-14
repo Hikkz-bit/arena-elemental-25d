@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "author": "Arena Elemental",
+  "description": "Original stylized, articulated 3D assets. Metres, Y up, forward -Z. Cosmetic variants share gameplay stats.",
+  "characters": [
+    {
+      "classId": "mage",
+      "bodyType": "male",
+      "file": "mage-male.glb",
+      "bytes": 939464,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    },
+    {
+      "classId": "mage",
+      "bodyType": "female",
+      "file": "mage-female.glb",
+      "bytes": 1122704,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    },
+    {
+      "classId": "knight",
+      "bodyType": "male",
+      "file": "knight-male.glb",
+      "bytes": 980044,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    },
+    {
+      "classId": "knight",
+      "bodyType": "female",
+      "file": "knight-female.glb",
+      "bytes": 1186992,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    },
+    {
+      "classId": "rogue",
+      "bodyType": "male",
+      "file": "rogue-male.glb",
+      "bytes": 1015492,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    },
+    {
+      "classId": "rogue",
+      "bodyType": "female",
+      "file": "rogue-female.glb",
+      "bytes": 1190872,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Ability1",
+        "Ability2",
+        "Ability3",
+        "Parry"
+      ]
+    }
+  ],
+  "weapons": [
+    {
+      "kind": "sword",
+      "file": "sword.glb",
+      "bytes": 82060
+    },
+    {
+      "kind": "dagger",
+      "file": "dagger.glb",
+      "bytes": 71312
+    },
+    {
+      "kind": "staff",
+      "file": "staff.glb",
+      "bytes": 64880
+    },
+    {
+      "kind": "shield",
+      "file": "shield.glb",
+      "bytes": 16452
+    }
+  ]
+}

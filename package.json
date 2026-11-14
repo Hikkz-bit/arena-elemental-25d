@@ -1,1 +1,17 @@
-{"name":"arena-elemental-25d","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"start":"node realtime/server.mjs","test":"node scripts/test-engine.mjs"},"dependencies":{"ws":"8.23.0"}}
+{
+  "name": "arena-elemental-25d",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node realtime/server.mjs",
+    "test": "node scripts/test-engine.mjs",
+    "test:assets": "node scripts/test-assets.mjs",
+    "export:assets": "node scripts/export-assets.mjs"
+  },
+  "dependencies": {
+    "ws": "8.23.0"
+  }
+}
