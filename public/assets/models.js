@@ -41,4 +41,48 @@ export function createWeapon(kind='sword'){
  compact(root);return root;
 }
 
-export function createViewWeapon(classId,bodyType){const root=new T.Group();root.name='view_'+classId;const glove=mat(bodyType==='female'?0xd7dedb:0x273b48),trim=mat(0xbd9257,.5);for(const side of classId==='mage'?[1]:[-1,1]){const hand=node(root,'view_hand_'+side,side*.4,-.24,-.72);oval(hand,glove,0,-.025,.04,.065,.09,.13);band(hand,trim,.067,-.03);const kind=side<0?(classId==='knight'?'shield':'dagger'):(classId==='mage'?'staff':classId==='knight'?'sword':'dagger'),w=createWeapon(kind);w.scale.setScalar(kind==='staff'?.72:kind==='sword'?.7:.85);w.position.set(0,0,-.08);w.rotation.z=side*(kind==='dagger'?-.3:-.12);hand.add(w);}compact(root);return root;}
+// First-person arms. Each hand is its own group so it can swing on its own; weapons stay separate children so they can be hidden.
+const VIEW_COLORS={knight:{male:[0x23262e,0x8f1f2a],female:[0xc9d2dc,0xd9b25f]},mage:{male:[0xf1f0ea,0x6fb6ff],female:[0x6a2c8f,0xe0b25c]},rogue:{male:[0xe8e2d2,0x2a8f86],female:[0x1f2226,0x2e7a5f]}};
+export function createViewWeapon(classId,bodyType){
+ const root=new T.Group();root.name='view_'+classId;const [sleeveColor,trimColor]=(VIEW_COLORS[classId]||VIEW_COLORS.mage)[bodyType==='female'?'female':'male'],sleeve=mat(sleeveColor),trim=mat(trimColor,.4,.5),hands={};
+ for(const side of [-1,1]){
+  const hand=node(root,'view_hand_'+side,side*.4,-.24,-.72);oval(hand,sleeve,0,-.025,.04,.065,.09,.13);band(hand,trim,.067,-.03);
+  const arm=tube(hand,sleeve,.058,.085,.7,0,-.27,.335,10);arm.rotation.x=Math.PI/2-.75;const cuff=tube(hand,trim,.068,.068,.05,0,-.07,.12,10);cuff.rotation.x=Math.PI/2-.75;
+  const kind=classId==='knight'?(side<0?'shield':'sword'):classId==='mage'?(side>0?'staff':null):(side>0?'dagger':null);let weapon=null;
+  if(kind){weapon=createWeapon(kind);weapon.scale.setScalar(kind==='staff'?.72:kind==='sword'?.7:.8);weapon.position.set(0,0,-.08);weapon.rotation.z=side*(kind==='dagger'?-.3:-.12);hand.add(weapon);}
+  else if(classId==='mage')jewel(hand,glow(0x97a9ff),0,.09,-.06,.05);
+  hands[side]={hand,weapon,rest:hand.position.clone(),offset:new T.Vector3(),turn:new T.Vector3()};
+ }
+ compact(root);
+ // The assassin throws with an empty hand: the dagger only shows for the stab.
+ if(classId==='rogue')hands[1].weapon.visible=false;
+ root.userData.view={classId,hands,guard:0,drop:0};return root;
+}
+
+const ramp=(t,a,b)=>{const x=Math.max(0,Math.min(1,(t-a)/(b-a)));return x*x*(3-2*x);};
+// [wind-up, strike] for each hand as [x,y,z, rotX,rotY,rotZ]; x is mirrored for the left hand.
+const SWINGS={
+ rogue0:{R:[[.05,.2,.22,1,0,0],[-.12,.06,-.42,-.9,0,.3]],L:[[0,0,0,0,0,0],[.03,-.03,.05,0,0,0]]},
+ rogue2:{R:[[.04,.02,.2,.2,0,0],[-.2,.08,-.5,-.25,.2,.25]],L:[[0,0,0,0,0,0],[.05,0,.08,0,0,0]]},
+ knight0:{R:[[.15,.28,.1,.5,0,-.9],[-.45,-.1,-.25,-.6,0,1.1]],L:[[0,0,0,0,0,0],[.06,-.04,.06,0,0,0]]},
+ knight1:{R:[[.05,.05,.15,-.4,0,0],[-.2,.1,-.4,-1.2,0,.1]],L:[[0,0,0,0,0,0],[.12,.1,-.1,0,.3,0]]},
+ knight2:{R:[[0,.4,.1,1.2,0,0],[-.15,-.25,-.2,-1.4,0,0]],L:[[0,.1,0,0,0,0],[.1,-.15,-.05,0,0,0]]},
+ mage0:{R:[[.05,0,.15,.2,0,0],[-.1,.1,-.35,-.5,0,0]],L:[[0,0,.1,0,0,0],[.15,.12,-.3,-.3,0,0]]},
+ mage1:{R:[[.2,.1,0,0,0,-.5],[-.3,.05,-.25,-.2,0,.6]],L:[[0,0,0,0,0,0],[.1,.05,-.15,0,0,0]]},
+ mage2:{R:[[0,.1,.05,.2,0,0],[0,.3,-.05,.6,0,0]],L:[[0,.05,0,0,0,0],[.08,.3,-.1,.5,0,0]]}
+};
+// s: {t: attack progress 0..1 or -1, element, parry, burst, moving}
+export function animateViewWeapon(root,s,time,dt=1/60){
+ const v=root?.userData.view;if(!v)return;const k=1-Math.exp(-dt*18),swing=s.t>=0?SWINGS[v.classId+s.element]:null,wind=swing?ramp(s.t,0,.16)*(1-ramp(s.t,.16,.34)):0,strike=swing?ramp(s.t,.16,.34)*(1-ramp(s.t,.55,1)):0;
+ v.guard+=((s.parry?1:0)-v.guard)*k;v.drop+=((s.burst?1:0)-v.drop)*k;
+ for(const side of [-1,1]){
+  const h=v.hands[side],pose=swing?swing[side>0?'R':'L']:null,p=[0,0,0,0,0,0];
+  if(pose)for(let i=0;i<6;i++)p[i]=pose[0][i]*wind+pose[1][i]*strike;
+  // Guard: the knight brings the shield across; the others cross their forearms.
+  if(v.classId==='knight'&&side<0){p[0]-=.3*v.guard;p[1]+=.2*v.guard;p[2]-=.1*v.guard;p[4]-=.4*v.guard;}else{p[0]-=.15*v.guard;p[1]+=.22*v.guard;p[2]-=.05*v.guard;p[5]+=.8*v.guard;}
+  p[1]-=.25*v.drop;p[2]+=.1*v.drop;p[0]+=.1*v.drop;
+  const bob=s.moving?Math.sin(time*11+(side>0?0:Math.PI))*.012:Math.sin(time*1.7+side)*.004;
+  h.hand.position.set(h.rest.x+side*p[0],h.rest.y+p[1]+bob,h.rest.z+p[2]);h.hand.rotation.set(p[3],side*p[4],side*p[5]);
+ }
+ if(v.classId==='rogue')v.hands[1].weapon.visible=s.t>=0&&s.element===2;
+}

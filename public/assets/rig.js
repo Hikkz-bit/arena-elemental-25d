@@ -17,6 +17,7 @@ function prepare(gltf){
   let clip=clips.get(def.clip);if(def.from!==undefined)clip=T.AnimationUtils.subclip(clip,id,Math.round(def.from*30),Math.round(def.to*30),30);
   const lower=[],upper=[];for(const track of clip.tracks)(LOWER.has(track.name.split('.')[0])?lower:upper).push(track);
   actions.set(id,{L:new T.AnimationClip(id+'.L',clip.duration,lower),U:new T.AnimationClip(id+'.U',clip.duration,upper),duration:clip.duration});
+  if(def.once)actions.set(id+'#2',{L:new T.AnimationClip(id+'.L2',clip.duration,lower),U:new T.AnimationClip(id+'.U2',clip.duration,upper),duration:clip.duration});
  }
  let triangles=0;gltf.scene.traverse(o=>{if(o.isMesh)triangles+=o.geometry.index.count/3;});
  return {scene:gltf.scene,actions,triangles};
@@ -35,7 +36,7 @@ function mount(a,boneName,kind,{forward,edge,along=8,scale=1,grip=0,out=0}){
  const weapon=createWeapon(kind),y=new T.Vector3(...forward).normalize(),x=new T.Vector3(...edge).normalize(),z=new T.Vector3().crossVectors(x,y).normalize();x.crossVectors(y,z);
  const desired=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z)),boneRotation=parentRotation(bone,a.model,new T.Quaternion()).multiply(bone.quaternion);
  weapon.quaternion.copy(boneRotation.invert().multiply(desired));weapon.scale.setScalar(100*scale);weapon.position.set(0,along,0);weapon.translateY(-grip*100*scale);weapon.translateZ(-out);
- weapon.traverse(o=>{if(o.isMesh){a.geometries.push(o.geometry);a.materials.push(o.material);}});bone.add(weapon);a.weapons.push(weapon);
+ weapon.traverse(o=>{if(o.isMesh){a.geometries.push(o.geometry);a.materials.push(o.material);}});bone.add(weapon);a.weapons.push(weapon);return weapon;
 }
 
 function attach(a,asset){
@@ -48,7 +49,11 @@ function attach(a,asset){
  // The model faces +Z; its right hand is on -X.
  if(a.classId==='knight'){mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.74});mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.8});}
  else if(a.classId==='mage')mount(a,'RightHand','staff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
- else{mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});mount(a,'LeftHand','dagger',{forward:[0,-.1,-1],edge:[0,-1,0],grip:.03,scale:.62});}
+ else{
+  // The assassin keeps both daggers sheathed on the thighs and throws with an empty hand; one is drawn only for the stab.
+  a.sheath=mount(a,'RightUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:-11,scale:.5});mount(a,'LeftUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:11,scale:.5});
+  a.drawn=mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});a.drawn.visible=false;
+ }
  a.mixer=new T.AnimationMixer(model);a.actions=new Map();for(const [id,c] of asset.actions){a.actions.set(id+'.U',a.mixer.clipAction(c.U));a.actions.set(id+'.L',a.mixer.clipAction(c.L));}
  a.ready=true;
 }
@@ -64,7 +69,8 @@ export function createCharacter(classId='mage',bodyType='male'){
 function setLayer(a,key,id,restart,runScale){
  const layer=a.layers[key],def=ACTIONS[id];
  if(layer.id!==id||(restart&&def.once)){
-  const next=a.actions.get(id+'.'+key),snap=layer.id===null||layer.id==='Death',fade=def.once?.07:.16,other=a.layers[key==='U'?'L':'U'];
+  const again=layer.id===id;layer.second=again&&!layer.second;
+  const next=a.actions.get(id+(layer.second?'#2':'')+'.'+key),snap=layer.id===null||layer.id==='Death',fade=def.once?.07:.16,other=a.layers[key==='U'?'L':'U'];
   next.reset();next.setLoop(def.once?T.LoopOnce:T.LoopRepeat,Infinity);next.clampWhenFinished=!!def.once;next.setEffectiveWeight(1);
   if(!def.once&&other.id===id&&other.action)next.time=other.action.time; // both halves of a loop stay in phase
   next.play();
@@ -93,6 +99,7 @@ export function animateCharacter(a,p,time,dt=1/60){
  // Lean into a sprint, bend back when hit, and follow the vertical aim.
  a.lean+=((dash?.5:0)-a.lean)*ease;const pitch=alive&&!dodge?(p.pitch||0):0;
  turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.hit*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
+ if(a.drawn){const stab=a.attack==='rogue2';a.drawn.visible=stab;a.sheath.visible=!stab;}
  a.ghost+=((dash?1:0)-a.ghost)*(1-Math.exp(-dt*20));for(const m of a.toon){m.userData.uniforms.uHit.value=a.hit;m.userData.uniforms.uGhost.value=a.ghost;}
 }
 

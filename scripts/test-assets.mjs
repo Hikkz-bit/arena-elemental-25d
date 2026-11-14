@@ -41,10 +41,10 @@ for(const classId of ['mage','knight','rogue'])for(const bodyType of ['male','fe
   assert(clip.channels.length>=20,name+' '+clip.name+' animates the body');assert.equal(clip.channels.filter(c=>c.target.path==='translation').length,1);
   for(const c of clip.channels){assert(skin.joints.includes(c.target.node));const s=clip.samplers[c.sampler],out=gltf.accessors[s.output],view=gltf.bufferViews[out.bufferView],data=new Float32Array(bin.buffer.slice(bin.byteOffset+view.byteOffset,bin.byteOffset+view.byteOffset+view.byteLength));assert(data.every(Number.isFinite),name+' '+clip.name+' finite');
    if(c.target.path==='rotation')for(let i=0;i<data.length;i+=4)assert(Math.abs(Math.hypot(data[i],data[i+1],data[i+2],data[i+3])-1)<1e-3,'unit quaternion');
-   else{assert.equal(c.target.node,hips);if(clip.name==='Run'||clip.name==='Idle'||clip.name==='Roll'){for(let i=3;i<data.length;i+=3){assert.equal(data[i],data[0],clip.name+' does not travel in X');assert.equal(data[i+2],data[2],clip.name+' does not travel in Z');}}}
+   else{assert.equal(c.target.node,hips);if(clip.name!=='Death'){for(let i=3;i<data.length;i+=3){assert.equal(data[i],data[0],clip.name+' does not travel in X');assert.equal(data[i+2],data[2],clip.name+' does not travel in Z');}}}
   }
  }
  assert.equal(manifest.characters.find(c=>c.classId===classId&&c.bodyType===bodyType).bytes,file.length);
 }
 for(const kind of ['sword','dagger','staff','shield']){const w=createWeapon(kind);assert(w.children.length>2);disposeModel(w);}
-console.log('PASS: animation layers and leg twist rules, six skinned characters with 24 joints and 12 clips each, in-place locomotion, unit rotations, four weapons');
+console.log('PASS: animation layers and leg twist rules, six skinned characters with 24 joints and 12 clips each, every clip but the fall stays in place, unit rotations, four weapons');

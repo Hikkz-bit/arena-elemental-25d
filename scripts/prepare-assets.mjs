@@ -12,17 +12,17 @@ import * as T from '../public/vendor/three.js';
 const RAW=process.argv[2]||'.local/rig',OUT='public/assets/glb',SOURCE='knight-male',FPS=30,TEXTURE=1024;
 const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female'];
 // root: which parts of the hips translation survive. 'y' keeps the bob but no travel (the game moves the
-// character), 'xyz' keeps lunges and falls, 'none' keeps the pose only. cut trims to [start,end] seconds.
+// character), 'xyz' keeps falls (attacks stay in place so they never slide or snap back), 'none' keeps the pose only. cut trims to [start,end] seconds.
 export const CLIPS=[
  {name:'Idle',file:'Idle',root:'y'},
  {name:'Run',file:'Run',root:'y'},
  {name:'Jump',file:'Jump',root:'none',cut:[.62,1.1]},
- {name:'Slash',file:'Slash',root:'xyz'},
- {name:'Thrust',file:'Thrust',root:'xyz'},
- {name:'Slam',file:'Slam',root:'xyz'},
- {name:'CastPush',file:'CastPush',root:'xyz'},
- {name:'CastFling',file:'CastFling',root:'xyz'},
- {name:'CastSky',file:'CastSky',root:'xyz'},
+ {name:'Slash',file:'Slash',root:'y'},
+ {name:'Thrust',file:'Thrust',root:'y'},
+ {name:'Slam',file:'Slam',root:'y'},
+ {name:'CastPush',file:'CastPush',root:'y'},
+ {name:'CastFling',file:'CastFling',root:'y'},
+ {name:'CastSky',file:'CastSky',root:'y'},
  {name:'Roll',file:'Roll',root:'y'},
  {name:'Parry',file:'Parry',root:'y'},
  {name:'Death',file:'Death',root:'xyz'}
