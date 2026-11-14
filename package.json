@@ -9,7 +9,8 @@
     "start": "node realtime/server.mjs",
     "test": "node scripts/test-engine.mjs",
     "test:assets": "node scripts/test-assets.mjs",
-    "prepare:assets": "node scripts/prepare-assets.mjs"
+    "prepare:assets": "node scripts/prepare-assets.mjs",
+    "test:online": "node scripts/test-online.mjs"
   },
   "dependencies": {
     "ws": "8.23.0"
