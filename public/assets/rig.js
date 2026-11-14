@@ -1,0 +1,99 @@
+import * as T from '../vendor/three.js';
+import {GLTFLoader} from '../vendor/GLTFLoader.js';
+import {clone as cloneSkinned} from '../vendor/SkeletonUtils.js';
+import {createWeapon} from './models.js';
+import {ACTIONS,LOWER_BONES,attackOf,pickLayers,legTwist} from './anim-state.js';
+import {toonMaterial,outlineMaterial} from './toon.js';
+
+// Sculpted, skinned characters. Each GLB carries its own copy of the 12 clips; here they are cut into
+// actions, split into an upper and a lower body layer, and blended by the player state.
+const loader=new GLTFLoader(),assets=new Map(),LOWER=new Set(LOWER_BONES),BASE=new URL('./glb/',import.meta.url).href;
+const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8},UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
+const q1=new T.Quaternion(),q2=new T.Quaternion(),q3=new T.Quaternion();
+
+function prepare(gltf){
+ const clips=new Map(gltf.animations.map(c=>[c.name,c])),actions=new Map();
+ for(const [id,def] of Object.entries(ACTIONS)){
+  let clip=clips.get(def.clip);if(def.from!==undefined)clip=T.AnimationUtils.subclip(clip,id,Math.round(def.from*30),Math.round(def.to*30),30);
+  const lower=[],upper=[];for(const track of clip.tracks)(LOWER.has(track.name.split('.')[0])?lower:upper).push(track);
+  actions.set(id,{L:new T.AnimationClip(id+'.L',clip.duration,lower),U:new T.AnimationClip(id+'.U',clip.duration,upper),duration:clip.duration});
+ }
+ let triangles=0;gltf.scene.traverse(o=>{if(o.isMesh)triangles+=o.geometry.index.count/3;});
+ return {scene:gltf.scene,actions,triangles};
+}
+export function loadCharacter(classId,bodyType){const key=classId+'-'+bodyType;if(!assets.has(key))assets.set(key,loader.loadAsync(BASE+key+'.glb').then(prepare));return assets.get(key);}
+export const preloadCharacters=()=>Promise.all(['mage','knight','rogue'].flatMap(c=>['male','female'].map(b=>loadCharacter(c,b))));
+
+// Rotation of a bone's parent chain, in the space of the model root.
+function parentRotation(bone,model,out){out.identity();for(let o=bone.parent;o&&o!==model;o=o.parent)out.premultiply(o.quaternion);return out;}
+// Turn a bone around an axis given in model space (after the clip has posed it).
+function turn(bone,model,axis,angle){if(Math.abs(angle)<1e-4)return;parentRotation(bone,model,q1);q2.setFromAxisAngle(axis,angle);q3.copy(q1).invert().multiply(q2).multiply(q1);bone.quaternion.premultiply(q3);}
+
+// Fix a procedural weapon to a bone so that, in the bind pose, its long axis points `forward` and its edge points `edge` (model space).
+function mount(a,boneName,kind,{forward,edge,along=8,scale=1,grip=0,out=0}){
+ const bone=a.bones[boneName];if(!bone)return;
+ const weapon=createWeapon(kind),y=new T.Vector3(...forward).normalize(),x=new T.Vector3(...edge).normalize(),z=new T.Vector3().crossVectors(x,y).normalize();x.crossVectors(y,z);
+ const desired=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z)),boneRotation=parentRotation(bone,a.model,new T.Quaternion()).multiply(bone.quaternion);
+ weapon.quaternion.copy(boneRotation.invert().multiply(desired));weapon.scale.setScalar(100*scale);weapon.position.set(0,along,0);weapon.translateY(-grip*100*scale);weapon.translateZ(-out);
+ weapon.traverse(o=>{if(o.isMesh){a.geometries.push(o.geometry);a.materials.push(o.material);}});bone.add(weapon);a.weapons.push(weapon);
+}
+
+function attach(a,asset){
+ const model=cloneSkinned(asset.scene),pivot=new T.Group();pivot.rotation.y=Math.PI;pivot.add(model);a.root.add(pivot);Object.assign(a,{pivot,model,asset,materials:[],geometries:[],weapons:[],bones:{},toon:[]});
+ const meshes=[];model.traverse(o=>{if(o.isBone)a.bones[o.name]=o;if(o.isSkinnedMesh)meshes.push(o);});
+ for(const mesh of meshes){
+  const toon=toonMaterial(mesh.material.map);mesh.material=toon;mesh.castShadow=true;mesh.frustumCulled=false;a.materials.push(toon);a.toon.push(toon);a.skeleton=mesh.skeleton;
+  const outline=new T.SkinnedMesh(mesh.geometry,outlineMaterial());outline.bind(mesh.skeleton,mesh.bindMatrix);outline.frustumCulled=false;mesh.parent.add(outline);a.materials.push(outline.material);a.outline=outline;
+ }
+ // The model faces +Z; its right hand is on -X.
+ if(a.classId==='knight'){mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.74});mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.8});}
+ else if(a.classId==='mage')mount(a,'RightHand','staff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
+ else{mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});mount(a,'LeftHand','dagger',{forward:[0,-.1,-1],edge:[0,-1,0],grip:.03,scale:.62});}
+ a.mixer=new T.AnimationMixer(model);a.actions=new Map();for(const [id,c] of asset.actions){a.actions.set(id+'.U',a.mixer.clipAction(c.U));a.actions.set(id+'.L',a.mixer.clipAction(c.L));}
+ a.ready=true;
+}
+
+export function createCharacter(classId='mage',bodyType='male'){
+ const root=new T.Group();root.name=classId+'_'+bodyType;root.userData.asset={classId,bodyType,style:'Sculpted stylized fantasy',version:2};
+ const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,layers:{U:{id:null,action:null},L:{id:null,action:null}},
+  dispose(){a.disposed=true;root.removeFromParent();a.mixer?.stopAllAction();for(const m of a.materials||[])m.dispose();for(const g of a.geometries||[])g.dispose();a.skeleton?.dispose();}};
+ a.loaded=loadCharacter(classId,bodyType).then(asset=>{if(!a.disposed)attach(a,asset);return a;});
+ return a;
+}
+
+function setLayer(a,key,id,restart,runScale){
+ const layer=a.layers[key],def=ACTIONS[id];
+ if(layer.id!==id||(restart&&def.once)){
+  const next=a.actions.get(id+'.'+key),snap=layer.id===null||layer.id==='Death',fade=def.once?.07:.16,other=a.layers[key==='U'?'L':'U'];
+  next.reset();next.setLoop(def.once?T.LoopOnce:T.LoopRepeat,Infinity);next.clampWhenFinished=!!def.once;next.setEffectiveWeight(1);
+  if(!def.once&&other.id===id&&other.action)next.time=other.action.time; // both halves of a loop stay in phase
+  next.play();
+  if(layer.action&&layer.action!==next){if(snap)layer.action.stop();else layer.action.crossFadeTo(next,fade,false);}
+  layer.id=id;layer.action=next;
+ }
+ layer.action.timeScale=id==='Run'?runScale:def.time?a.asset.actions.get(id).duration/def.time:1;
+}
+
+// p: player snapshot plus `moving` and optionally `move:{f,s}` (velocity forward/right relative to the aim).
+export function animateCharacter(a,p,time,dt=1/60){
+ a.hit=Math.max(0,a.hit-dt*4);if(!a.ready)return;
+ const cast=p.cast||0;let restart=false;
+ if(cast>a.lastCast+.15){const id=attackOf(a.classId,p.element||0);if(id){a.attack=id;a.attackLeft=ACTIONS[id].time;restart=true;}}
+ a.lastCast=cast;if(a.attack&&(a.attackLeft-=dt)<=0)a.attack=null;
+ const layers=pickLayers(p,a.attack),move=p.move||{f:p.moving?1:0,s:0},legs=legTwist(move.f,move.s),running=layers.lower==='Run';
+ const runScale=RUN_SPEED[a.classId]/4.2*(p.slow>0?.55:1)*(legs.backwards?-.85:1);
+ setLayer(a,'L',layers.lower,restart,runScale);setLayer(a,'U',layers.upper,restart,runScale);
+ a.mixer.update(dt);
+ const ease=1-Math.exp(-dt*14),dodge=p.burst?.kind==='dodge',dash=layers.lower==='Dash',alive=p.hp>0;
+ // Legs follow the direction of travel while the torso keeps aiming.
+ a.twist+=((running?legs.angle:0)-a.twist)*ease;
+ if(Math.abs(a.twist)>1e-3){const hips=a.bones.Hips,spine=a.bones.Spine02;q2.setFromAxisAngle(UP,-a.twist);hips.quaternion.premultiply(q2);q3.copy(hips.quaternion).invert();q2.setFromAxisAngle(UP,a.twist);q3.multiply(q2).multiply(hips.quaternion);spine.quaternion.premultiply(q3);}
+ // The dash roll faces where it travels; it eases back to the aim afterwards.
+ if(dodge)a.turnAngle=p.burst.angle||0;else a.turnAngle+=(0-a.turnAngle)*ease;a.pivot.rotation.y=Math.PI-a.turnAngle;
+ // Lean into a sprint, bend back when hit, and follow the vertical aim.
+ a.lean+=((dash?.5:0)-a.lean)*ease;const pitch=alive&&!dodge?(p.pitch||0):0;
+ turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.hit*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
+ a.ghost+=((dash?1:0)-a.ghost)*(1-Math.exp(-dt*20));for(const m of a.toon){m.userData.uniforms.uHit.value=a.hit;m.userData.uniforms.uGhost.value=a.ghost;}
+}
+
+export function disposeModel(root){root.removeFromParent();}

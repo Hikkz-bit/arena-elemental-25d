@@ -33,7 +33,7 @@ Os seis personagens de `public/assets/models.js` são peças geométricas (esfer
 
 ## Arquitetura
 - `public/assets/glb/<classe>-<corpo>.glb`: malha + esqueleto + textura (≤ ~3 MB cada, textura 1024 WebP).
-- `public/assets/glb/anim/<Clipe>.glb`: só esqueleto + animação, compartilhado pelos seis (mesmos nomes de osso).
+- Os 12 clipes ficam dentro de cada GLB, já adaptados ao esqueleto daquele personagem (decisão tomada na execução: arquivo padrão, sem código de adaptação no navegador).
 - `public/vendor/GLTFLoader.js`, `SkeletonUtils.js`, `BufferGeometryUtils.js`: three r160, import apontando para `./three.js`.
 - `public/assets/rig.js` (novo): `preloadCharacters()`, `createCharacter(classId, bodyType)`, `animateCharacter(a, p, time, dt)`, `disposeModel`. Mesma assinatura que o jogo já usa; por dentro, `AnimationMixer` com máquina de estados e `crossFadeTo`.
 - `public/assets/toon.js` (novo): troca materiais por `MeshToonMaterial` com rampa de 3 tons e cria o contorno (casca invertida).
@@ -64,3 +64,8 @@ Levar golpe é aditivo e procedural (coluna e cabeça), para funcionar em qualqu
 ## Riscos
 - Clipes de um esqueleto aplicados em outro: só rotações são transferidas (posição só do quadril, escalada pela altura). Conferir visualmente em cada um.
 - Cabelo e casaco longos podem deformar mal; por isso os conceitos usam cabelo até o ombro e casacos abertos.
+
+## Como ficou (2026-11-14)
+- Custo real: cerca de 220 créditos (7 malhas Tripo a 12, 13 jobs de esqueleto com clipe a 8, 5 esqueletos a 5, imagens a 0,25). Uma malha de teste e um esqueleto foram descartados: o Tripo entrega o modelo olhando para +X e o esqueleto da Meshy só sai certo com o modelo olhando para +Z.
+- Pedido extra durante a execução: dash universal no Shift (motor, servidor, HUD, animação Roll).
+- Também entrou: câmera sobre o ombro mais alta e afastada, câmera em terceira pessoa ao morrer, personagem escolhido em destaque no menu, câmera lenta na galeria.

@@ -18,4 +18,10 @@ for(const [i,damage] of [28,20,46].entries()){const f=fixture();f.a.input.fire[i
  for(let i=0;i<500;i++)motion(p,{forward:1,strafe:1,yaw:1},1/60);assert(Math.abs(p.x)<=11.5&&Math.abs(p.z)<=9.5,'arena bounds');
  motion(p,{jump:true},.1);assert(p.y>0,'jump');
 }
-console.log('PASS: 9 skills in depth, mage damage, parry reset, aim/pitch misses, smooth dash, rotation, pillars, bounds, jump, private tokens');
+{
+ // Universal dash: Shift, edge-triggered, moves along the input direction, brief invulnerability, own cooldown.
+ const f=fixture('mage');f.a.input={forward:0,strafe:1,yaw:0,pitch:0,jump:false,parry:false,dash:true,fire:[false,false,false]};f.step(1/60);assert.equal(f.a.burst?.kind,'dodge');assert(f.a.inv>0,'dash grants i-frames');assert(f.a.dashCd>2,'dash cooldown starts');f.step(.23);assert(f.a.x>3.3&&f.a.x<3.6,'dash travels sideways about 3.4 m, got '+f.a.x);assert.equal(f.a.burst,null);const x=f.a.x;f.step(.5);assert(f.a.x>x,'walking continues after the dash');const held=f.a.x;f.step(3);assert(f.a.dashCd===0);assert.equal(f.a.burst,null,'holding the key does not chain dashes');
+ const g=fixture('knight');g.b.input={...g.b.input,dash:true};g.a.input.fire[0]=true;g.step(1/60);assert.equal(g.b.hp,100,'dash i-frames avoid a melee hit');
+ const h=fixture('rogue');h.a.input={forward:0,strafe:0,yaw:0,pitch:0,jump:false,parry:false,dash:true,fire:[false,false,false]};h.step(.4);assert(h.a.z<3-2.5,'no direction held: dash goes forward');
+}
+console.log('PASS: universal dash, 9 skills in depth, mage damage, parry reset, aim/pitch misses, smooth dash, rotation, pillars, bounds, jump, private tokens');

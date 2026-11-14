@@ -9,7 +9,7 @@ import {newRoom,newPlayer,reset,advance,snapshot,MAX} from '../worker/engine.mjs
 
 const publicDir=fileURLToPath(new URL('../public/',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.glb':'model/gltf-binary','.json':'application/json'};
-const idle=()=>({forward:0,strafe:0,jump:false,parry:false,fire:[false,false,false]});
+const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,fire:[false,false,false]});
 const hash=token=>createHash('sha256').update(token).digest('hex');
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 export function createArena({allowedOrigins=[],maxRooms=200}={}){
@@ -64,8 +64,8 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
      const entry=ws.entry,p=ws.player;if(!entry||!p)fail('Entre em uma sala.',401);
      p.seen=now;entry.lastUsed=now;
      if(m.action==='input'){
-      const i=m.input;if(!Number.isSafeInteger(m.seq)||!i||![-1,0,1].includes(i.forward)||![-1,0,1].includes(i.strafe)||!Number.isFinite(i.yaw)||Math.abs(i.yaw)>100000||!Number.isFinite(i.pitch)||Math.abs(i.pitch)>1.35||typeof i.jump!=='boolean'||(i.parry!==undefined&&typeof i.parry!=='boolean')||!Array.isArray(i.fire)||i.fire.length!==3||!i.fire.every(v=>typeof v==='boolean'))fail('Comando inválido.');
-      if(m.seq>p.seq){p.seq=m.seq;ws.lastInput=now;p.parryQueued||=i.parry===true&&!p.input.parry;p.input={forward:i.forward,strafe:i.strafe,yaw:i.yaw,pitch:i.pitch,jump:i.jump,parry:i.parry===true,fire:[...i.fire]};}return;
+      const i=m.input;if(!Number.isSafeInteger(m.seq)||!i||![-1,0,1].includes(i.forward)||![-1,0,1].includes(i.strafe)||!Number.isFinite(i.yaw)||Math.abs(i.yaw)>100000||!Number.isFinite(i.pitch)||Math.abs(i.pitch)>1.35||typeof i.jump!=='boolean'||(i.parry!==undefined&&typeof i.parry!=='boolean')||(i.dash!==undefined&&typeof i.dash!=='boolean')||!Array.isArray(i.fire)||i.fire.length!==3||!i.fire.every(v=>typeof v==='boolean'))fail('Comando inválido.');
+      if(m.seq>p.seq){p.seq=m.seq;ws.lastInput=now;p.parryQueued||=i.parry===true&&!p.input.parry;p.dashQueued||=i.dash===true&&!p.input.dash;p.input={forward:i.forward,strafe:i.strafe,yaw:i.yaw,pitch:i.pitch,jump:i.jump,parry:i.parry===true,dash:i.dash===true,fire:[...i.fire]};}return;
      }else if(m.action==='configure'){
       if(!['lobby','finished'].includes(entry.state.phase))fail('Escolha antes de começar a partida.',409);
       if(m.classId!==undefined&&!Object.hasOwn(CLASSES,m.classId))fail('Classe inválida.');

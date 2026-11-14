@@ -1,3 +1,7 @@
 node_modules/
 .local/
 .env
+public/_dev.html
+public/assets/glb/_raw/
+.claude/
+public/_grid.html
