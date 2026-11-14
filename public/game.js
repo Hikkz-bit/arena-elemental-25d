@@ -9,7 +9,7 @@ const $=s=>document.querySelector(s),canvas=$('#view'),scene=new T.Scene(),camer
 let renderer;try{renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#error').textContent='Este navegador não conseguiu iniciar o 3D. Abra no Chrome ou Edge com aceleração gráfica.';throw e;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
 camera.rotation.order='YXZ';scene.add(camera);
-let room=null,session=null,world=buildWorld(scene,'abbey'),mapId='abbey',local=null,yaw=0,pitch=0,time=0,last=performance.now(),received=0,lastEvent=0,seq=Date.now(),online=false,busy=false,locked=false,sound=false,audio,feedback=0,hitFlash=0,weaponClass='',lastUi=0,burstGrace=0,thirdPerson=false;
+let room=null,session=null,world=buildWorld(scene,'abbey'),mapId='abbey',local=null,yaw=0,pitch=0,time=0,last=performance.now(),received=0,lastEvent=0,seq=Date.now(),online=false,busy=false,locked=false,sound=false,audio,feedback=0,hitFlash=0,weaponClass='',lastUi=0,burstGrace=0,thirdPerson=true;
 const magic=createMagic(scene);
 const keys=new Set(),taps=[false,false,false],avatars=new Map(),fx=[],slots=['#9fc7ff','#f3cc8d','#8dedcc'];let jumpTap=false,parryTap=false,dashTap=false;
 const viewmodel=new T.Group();camera.add(viewmodel);
