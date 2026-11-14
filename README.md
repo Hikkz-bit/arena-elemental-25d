@@ -28,6 +28,8 @@ Mago: fogo 28, gelo 20 e raio 46. Cavaleiro: espada, investida e abalo. Assassin
 
 ## Servidor
 
+Publicar no Render (plano gratuito, usa o `render.yaml` deste repositório): [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Hikkz-bit/arena-elemental-25d). O jogo e o servidor de salas sobem no mesmo endereço; basta enviar o link da sala aos amigos.
+
 Node + WebSocket. Simulação autoritativa a 60 passos/s, atualizações a 20/s, controles a 30/s. Salas temporárias em memória; reiniciar o servidor encerra partidas. Plano Render Free, build `npm ci --omit=dev`, início `npm start`, porta automática `PORT`, saúde `/health`.
 
 `npm test` verifica as habilidades, o dash e as colisões. `scripts/test-browser.mjs` usa o Playwright do estúdio local para conferir os três clientes e o modo treino.
