@@ -10,7 +10,11 @@ export const CLASSES = {
  rogue: {name:'Assassino',role:'Velocidade e precisão',hp:80,speed:145,color:'#8dedcc',description:'Menos vida, mais velocidade. Lance adagas, esquive e finalize pelas costas.',abilities:[
   {name:'Adaga voadora',hint:'PROJÉTIL RÁPIDO',cooldown:.6,kind:'dagger',damage:24},
   {name:'Passo sombrio',hint:'ESQUIVA · SEM DANO',cooldown:2,kind:'dash',damage:0,range:105,duration:.26},
-  {name:'Golpe furtivo',hint:'BÔNUS PELAS COSTAS',cooldown:3,kind:'backstab',damage:42,range:62}]}
+  {name:'Golpe furtivo',hint:'BÔNUS PELAS COSTAS',cooldown:3,kind:'backstab',damage:42,range:62}]},
+ elf: {name:'Elfa',role:'Alcance e mobilidade',hp:95,speed:130,color:'#ffe9a8',description:'Lança de longo alcance, um salto que atravessa a arena e uma flecha de luz veloz.',abilities:[
+  {name:'Estocada de lança',hint:'ALCANCE LONGO',cooldown:.7,kind:'pierce',damage:26,range:74},
+  {name:'Salto lunar',hint:'AVANÇO + GOLPE',cooldown:2.4,kind:'charge',damage:24,range:96,duration:.3},
+  {name:'Flecha de luz',hint:'PROJÉTIL VELOZ',cooldown:3.2,kind:'light',damage:38}]}
 };
 export const MAPS = {
  abbey:{name:'Abadia da Lua',description:'Arcos em ruínas, névoa e tochas sob a lua.',color:'#9fbabc'},

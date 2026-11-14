@@ -24,4 +24,4 @@ for(const [i,damage] of [28,20,46].entries()){const f=fixture();f.a.input.fire[i
  const g=fixture('knight');g.b.input={...g.b.input,dash:true};g.a.input.fire[0]=true;g.step(1/60);assert.equal(g.b.hp,100,'dash i-frames avoid a melee hit');
  const h=fixture('rogue');h.a.input={forward:0,strafe:0,yaw:0,pitch:0,jump:false,parry:false,dash:true,fire:[false,false,false]};h.step(.4);assert(h.a.z<3-2.5,'no direction held: dash goes forward');
 }
-console.log('PASS: universal dash, 9 skills in depth, mage damage, parry reset, aim/pitch misses, smooth dash, rotation, pillars, bounds, jump, private tokens');
+console.log('PASS: universal dash, 12 skills in depth, mage damage, parry reset, aim/pitch misses, smooth dash, rotation, pillars, bounds, jump, private tokens');

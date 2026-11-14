@@ -18,7 +18,7 @@ assert.deepEqual(pickLayers({...alive,burst:{kind:'dodge'}},'mage0'),{upper:'Rol
 assert.deepEqual(pickLayers({...alive,burst:{kind:'dash'}},null),{upper:'Dash',lower:'Dash'});
 assert.deepEqual(pickLayers({...alive,burst:{kind:'charge'}},'knight1'),{upper:'knight1',lower:'knight1'});
 assert.deepEqual(pickLayers({...alive,hp:0,burst:{kind:'dodge'},parry:1},'knight0'),{upper:'Death',lower:'Death'},'death wins over everything');
-for(const classId of ['knight','mage','rogue'])for(let i=0;i<3;i++){const id=attackOf(classId,i);if(classId==='rogue'&&i===1)assert.equal(id,null);else assert(ACTIONS[id].once&&ACTIONS[id].time>0,id);}
+for(const classId of ['knight','mage','rogue','elf'])for(let i=0;i<3;i++){const id=attackOf(classId,i);if(classId==='rogue'&&i===1)assert.equal(id,null);else assert(ACTIONS[id].once&&ACTIONS[id].time>0,id);}
 assert.equal(attackOf('mage',7),null);assert.equal(attackOf('toString',''),null);
 for(const a of Object.values(ACTIONS)){assert(CLIP_NAMES.includes(a.clip));if(a.from!==undefined)assert(a.to>a.from);}
 assert.deepEqual(legTwist(0,0),{angle:0,backwards:false});assert.deepEqual(legTwist(1,0),{angle:0,backwards:false});
@@ -27,8 +27,8 @@ assert(legTwist(-1,0).backwards&&Math.abs(legTwist(-1,0).angle)<1e-9,'straight b
 assert(legTwist(-1,1).backwards&&legTwist(-1,1).angle<0,'back-right pedals backwards with the legs turned left');
 
 // Shipped character files: skinned, 24 joints, every clip present and well formed.
-const manifest=JSON.parse(fs.readFileSync('public/assets/manifest.json','utf8'));assert.equal(manifest.characters.length,6);
-for(const classId of ['mage','knight','rogue'])for(const bodyType of ['male','female']){
+const manifest=JSON.parse(fs.readFileSync('public/assets/manifest.json','utf8'));assert.equal(manifest.characters.length,7);
+for(const classId of ['mage','knight','rogue','elf'])for(const bodyType of classId==='elf'?['female']:['male','female']){
  const name=classId+'-'+bodyType,file=fs.readFileSync('public/assets/glb/'+name+'.glb');assert.equal(file.readUInt32LE(0),0x46546c67);assert.equal(file.readUInt32LE(8),file.length);assert(file.length<2.5e6,name+' stays under 2.5 MB');
  const n=file.readUInt32LE(12),gltf=JSON.parse(file.subarray(20,20+n).toString()),bin=file.subarray(28+n),skin=gltf.skins[0],prim=gltf.meshes[0].primitives[0];
  assert.equal(skin.joints.length,24);for(const bone of LOWER_BONES.concat(['Spine02','Spine','Head','LeftHand','RightHand','LeftForeArm']))assert(skin.joints.some(j=>gltf.nodes[j].name===bone),name+' has bone '+bone);
@@ -46,5 +46,5 @@ for(const classId of ['mage','knight','rogue'])for(const bodyType of ['male','fe
  }
  assert.equal(manifest.characters.find(c=>c.classId===classId&&c.bodyType===bodyType).bytes,file.length);
 }
-for(const kind of ['sword','dagger','staff','shield']){const w=createWeapon(kind);assert(w.children.length>2);disposeModel(w);}
-console.log('PASS: animation layers and leg twist rules, six skinned characters with 24 joints and 12 clips each, every clip but the fall stays in place, unit rotations, four weapons');
+for(const kind of ['sword','dagger','staff','shield','spear']){const w=createWeapon(kind);assert(w.children.length>2);disposeModel(w);}
+console.log('PASS: animation layers and leg twist rules, seven skinned characters with 24 joints and 12 clips each, every clip but the fall stays in place, unit rotations, four weapons');

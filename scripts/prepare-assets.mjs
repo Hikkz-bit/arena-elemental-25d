@@ -10,7 +10,7 @@ import {execFileSync} from 'node:child_process';
 import * as T from '../public/vendor/three.js';
 
 const RAW=process.argv[2]||'.local/rig',OUT='public/assets/glb',SOURCE='knight-male',FPS=30,TEXTURE=1024;
-const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female'];
+const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female','elf-female'];
 // root: which parts of the hips translation survive. 'y' keeps the bob but no travel (the game moves the
 // character), 'xyz' keeps falls (attacks stay in place so they never slide or snap back), 'none' keeps the pose only. cut trims to [start,end] seconds.
 export const CLIPS=[

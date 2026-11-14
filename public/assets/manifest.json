@@ -134,6 +134,28 @@
         "Parry",
         "Death"
       ]
+    },
+    {
+      "classId": "elf",
+      "bodyType": "female",
+      "file": "elf-female.glb",
+      "bytes": 1640656,
+      "triangles": 28584,
+      "bones": 24,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Slash",
+        "Thrust",
+        "Slam",
+        "CastPush",
+        "CastFling",
+        "CastSky",
+        "Roll",
+        "Parry",
+        "Death"
+      ]
     }
   ],
   "weapons": [

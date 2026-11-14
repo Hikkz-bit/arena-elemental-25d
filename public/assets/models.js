@@ -33,6 +33,10 @@ export function createWeapon(kind='sword'){
   const crystal=mesh(root,new T.OctahedronGeometry(.125),gem,0,.91,0);crystal.scale.y=1.55;
   const ring=mesh(root,new T.TorusGeometry(.16,.012,5,24),gold,0,.92,0);ring.rotation.x=.35;
   jewel(root,gem,0,-.53,0,.05);
+ }else if(kind==='spear'){
+  tube(root,leather,.024,.028,2,0,.3,0);for(const y of [-.55,-.1,.35,1.22])band(root,gold,.034,y,.04);
+  shape(root,[[0,1.92],[.095,1.56],[.05,1.3],[-.05,1.3],[-.095,1.56]],.03,steel);shape(root,[[0,1.9],[.095,1.56],[.05,1.32],[.02,1.56]],.034,edge);
+  for(const side of [-1,1])shape(root,[[side*.03,1.3],[side*.13,1.22],[side*.05,1.16]],.03,gold);jewel(root,gem,0,1.26,-.03,.04);mesh(root,new T.ConeGeometry(.03,.16,6),steel,0,-.78,0).rotation.x=Math.PI;
  }else if(kind==='shield'){
   shape(root,[[-.25,.28],[0,.35],[.25,.28],[.23,-.1],[0,-.36],[-.23,-.1]],.08,gold);
   shape(root,[[-.21,.25],[0,.3],[.21,.25],[.19,-.08],[0,-.3],[-.19,-.08]],.085,dark);
@@ -42,14 +46,14 @@ export function createWeapon(kind='sword'){
 }
 
 // First-person arms. Each hand is its own group so it can swing on its own; weapons stay separate children so they can be hidden.
-const VIEW_COLORS={knight:{male:[0x23262e,0x8f1f2a],female:[0xc9d2dc,0xd9b25f]},mage:{male:[0xf1f0ea,0x6fb6ff],female:[0x6a2c8f,0xe0b25c]},rogue:{male:[0xe8e2d2,0x2a8f86],female:[0x1f2226,0x2e7a5f]}};
+const VIEW_COLORS={knight:{male:[0x23262e,0x8f1f2a],female:[0xc9d2dc,0xd9b25f]},mage:{male:[0xf1f0ea,0x6fb6ff],female:[0x6a2c8f,0xe0b25c]},rogue:{male:[0xe8e2d2,0x2a8f86],female:[0x1f2226,0x2e7a5f]},elf:{male:[0x1b1b20,0xd9a441],female:[0x1b1b20,0xd9a441]}};
 export function createViewWeapon(classId,bodyType){
  const root=new T.Group();root.name='view_'+classId;const [sleeveColor,trimColor]=(VIEW_COLORS[classId]||VIEW_COLORS.mage)[bodyType==='female'?'female':'male'],sleeve=mat(sleeveColor),trim=mat(trimColor,.4,.5),hands={};
  for(const side of [-1,1]){
   const hand=node(root,'view_hand_'+side,side*.4,-.24,-.72);oval(hand,sleeve,0,-.025,.04,.065,.09,.13);band(hand,trim,.067,-.03);
   const arm=tube(hand,sleeve,.058,.085,.7,0,-.27,.335,10);arm.rotation.x=Math.PI/2-.75;const cuff=tube(hand,trim,.068,.068,.05,0,-.07,.12,10);cuff.rotation.x=Math.PI/2-.75;
-  const kind=classId==='knight'?(side<0?'shield':'sword'):classId==='mage'?(side>0?'staff':null):(side>0?'dagger':null);let weapon=null;
-  if(kind){weapon=createWeapon(kind);weapon.scale.setScalar(kind==='staff'?.72:kind==='sword'?.7:.8);weapon.position.set(0,0,-.08);weapon.rotation.z=side*(kind==='dagger'?-.3:-.12);hand.add(weapon);}
+  const kind=classId==='knight'?(side<0?'shield':'sword'):classId==='mage'?(side>0?'staff':null):classId==='elf'?(side>0?'spear':null):(side>0?'dagger':null);let weapon=null;
+  if(kind){weapon=createWeapon(kind);weapon.scale.setScalar(kind==='staff'?.72:kind==='sword'?.7:kind==='spear'?.6:.8);weapon.position.set(0,0,-.08);weapon.rotation.z=side*(kind==='dagger'?-.3:-.12);hand.add(weapon);}
   else if(classId==='mage')jewel(hand,glow(0x97a9ff),0,.09,-.06,.05);
   hands[side]={hand,weapon,rest:hand.position.clone(),offset:new T.Vector3(),turn:new T.Vector3()};
  }
@@ -69,7 +73,10 @@ const SWINGS={
  knight2:{R:[[0,.4,.1,1.2,0,0],[-.15,-.25,-.2,-1.4,0,0]],L:[[0,.1,0,0,0,0],[.1,-.15,-.05,0,0,0]]},
  mage0:{R:[[.05,0,.15,.2,0,0],[-.1,.1,-.35,-.5,0,0]],L:[[0,0,.1,0,0,0],[.15,.12,-.3,-.3,0,0]]},
  mage1:{R:[[.2,.1,0,0,0,-.5],[-.3,.05,-.25,-.2,0,.6]],L:[[0,0,0,0,0,0],[.1,.05,-.15,0,0,0]]},
- mage2:{R:[[0,.1,.05,.2,0,0],[0,.3,-.05,.6,0,0]],L:[[0,.05,0,0,0,0],[.08,.3,-.1,.5,0,0]]}
+ mage2:{R:[[0,.1,.05,.2,0,0],[0,.3,-.05,.6,0,0]],L:[[0,.05,0,0,0,0],[.08,.3,-.1,.5,0,0]]},
+ elf0:{R:[[.05,.05,.2,-.5,0,0],[-.18,.1,-.45,-1.25,0,.1]],L:[[0,0,0,0,0,0],[.1,.05,-.1,0,.2,0]]},
+ elf1:{R:[[.05,.1,.2,-.6,0,0],[-.2,.12,-.5,-1.3,0,.1]],L:[[0,0,0,0,0,0],[.12,.1,-.15,0,.3,0]]},
+ elf2:{R:[[0,.05,.1,.1,0,0],[-.05,.2,-.1,.3,0,0]],L:[[0,0,.1,0,0,0],[.2,.15,-.35,-.3,0,0]]}
 };
 // s: {t: attack progress 0..1 or -1, element, parry, burst, moving}
 export function animateViewWeapon(root,s,time,dt=1/60){

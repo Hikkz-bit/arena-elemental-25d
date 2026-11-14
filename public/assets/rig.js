@@ -8,7 +8,7 @@ import {toonMaterial,outlineMaterial} from './toon.js';
 // Sculpted, skinned characters. Each GLB carries its own copy of the 12 clips; here they are cut into
 // actions, split into an upper and a lower body layer, and blended by the player state.
 const loader=new GLTFLoader(),assets=new Map(),LOWER=new Set(LOWER_BONES),BASE=new URL('./glb/',import.meta.url).href;
-const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8},UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
+const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8,elf:5.2},TRAIL={knight:0xbfe4ff,rogue:0x7dffd0,elf:0xfff0a8},SWINGS=new Set(['knight0','knight1','knight2','rogue2','elf0','elf1']),UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
 const q1=new T.Quaternion(),q2=new T.Quaternion(),q3=new T.Quaternion();
 
 function prepare(gltf){
@@ -22,8 +22,9 @@ function prepare(gltf){
  let triangles=0;gltf.scene.traverse(o=>{if(o.isMesh)triangles+=o.geometry.index.count/3;});
  return {scene:gltf.scene,actions,triangles};
 }
-export function loadCharacter(classId,bodyType){const key=classId+'-'+bodyType;if(!assets.has(key))assets.set(key,loader.loadAsync(BASE+key+'.glb').then(prepare));return assets.get(key);}
-export const preloadCharacters=()=>Promise.all(['mage','knight','rogue'].flatMap(c=>['male','female'].map(b=>loadCharacter(c,b))));
+// The elf has a single model.
+export function loadCharacter(classId,bodyType){const key=classId+'-'+(classId==='elf'?'female':bodyType);if(!assets.has(key))assets.set(key,loader.loadAsync(BASE+key+'.glb').then(prepare));return assets.get(key);}
+export const preloadCharacters=()=>Promise.all([...['mage','knight','rogue'].flatMap(c=>['male','female'].map(b=>loadCharacter(c,b))),loadCharacter('elf','female')]);
 
 // Rotation of a bone's parent chain, in the space of the model root.
 function parentRotation(bone,model,out){out.identity();for(let o=bone.parent;o&&o!==model;o=o.parent)out.premultiply(o.quaternion);return out;}
@@ -39,6 +40,21 @@ function mount(a,boneName,kind,{forward,edge,along=8,scale=1,grip=0,out=0}){
  weapon.traverse(o=>{if(o.isMesh){a.geometries.push(o.geometry);a.materials.push(o.material);}});bone.add(weapon);a.weapons.push(weapon);return weapon;
 }
 
+// A ribbon that follows the blade during a swing: the last few tip and base positions, fading out.
+function createTrail(a,color){
+ const n=12,geometry=new T.BufferGeometry(),index=[];for(let i=0;i<n-1;i++){const k=i*2;index.push(k,k+1,k+2,k+1,k+3,k+2);}
+ geometry.setAttribute('position',new T.BufferAttribute(new Float32Array(n*6),3));geometry.setAttribute('color',new T.BufferAttribute(new Float32Array(n*6),3));geometry.setIndex(index);
+ const material=new T.MeshBasicMaterial({vertexColors:true,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false}),mesh=new T.Mesh(geometry,material);mesh.frustumCulled=false;a.geometries.push(geometry);a.materials.push(material);
+ return {mesh,n,samples:[],color:new T.Color(color)};
+}
+function updateTrail(a,dt){
+ const t=a.trail,scene=a.root.parent;if(!scene)return;if(t.mesh.parent!==scene)scene.add(t.mesh);t.mesh.visible=a.root.visible;
+ for(const s of t.samples)s.life-=dt*4.5;while(t.samples.length&&t.samples[0].life<=0)t.samples.shift();
+ if(SWINGS.has(a.attack)&&a.root.visible){a.root.updateMatrixWorld(true);const w=a.blade.weapon;t.samples.push({tip:w.localToWorld(new T.Vector3(0,a.blade.tip,0)),base:w.localToWorld(new T.Vector3(0,a.blade.base,0)),life:1});if(t.samples.length>t.n)t.samples.shift();}
+ const position=t.mesh.geometry.attributes.position,color=t.mesh.geometry.attributes.color,count=t.samples.length;
+ for(let i=0;i<t.n;i++){const s=t.samples[Math.min(i,count-1)],k=count?Math.max(0,s.life)*(i<count?(i+1)/count:0):0;if(s){position.setXYZ(i*2,s.tip.x,s.tip.y,s.tip.z);position.setXYZ(i*2+1,s.base.x,s.base.y,s.base.z);}color.setXYZ(i*2,t.color.r*k,t.color.g*k,t.color.b*k);color.setXYZ(i*2+1,t.color.r*k*.25,t.color.g*k*.25,t.color.b*k*.25);}
+ position.needsUpdate=true;color.needsUpdate=true;
+}
 function attach(a,asset){
  const model=cloneSkinned(asset.scene),pivot=new T.Group();pivot.rotation.y=Math.PI;pivot.add(model);a.root.add(pivot);Object.assign(a,{pivot,model,asset,materials:[],geometries:[],weapons:[],bones:{},toon:[]});
  const meshes=[];model.traverse(o=>{if(o.isBone)a.bones[o.name]=o;if(o.isSkinnedMesh)meshes.push(o);});
@@ -47,21 +63,23 @@ function attach(a,asset){
   const outline=new T.SkinnedMesh(mesh.geometry,outlineMaterial());outline.bind(mesh.skeleton,mesh.bindMatrix);outline.frustumCulled=false;mesh.parent.add(outline);a.materials.push(outline.material);a.outline=outline;
  }
  // The model faces +Z; its right hand is on -X.
- if(a.classId==='knight'){mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.74});mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.8});}
+ if(a.classId==='knight'){a.blade={weapon:mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.74}),tip:1.3,base:.35};mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.8});}
  else if(a.classId==='mage')mount(a,'RightHand','staff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
+ else if(a.classId==='elf')a.blade={weapon:mount(a,'RightHand','spear',{forward:[0,.18,1],edge:[0,-1,0],grip:.15,scale:.95}),tip:1.9,base:1.25};
  else{
   // The assassin keeps both daggers sheathed on the thighs and throws with an empty hand; one is drawn only for the stab.
   a.sheath=mount(a,'RightUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:-11,scale:.5});mount(a,'LeftUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:11,scale:.5});
-  a.drawn=mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});a.drawn.visible=false;
+  a.drawn=mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});a.drawn.visible=false;a.blade={weapon:a.drawn,tip:.85,base:.25};
  }
  a.mixer=new T.AnimationMixer(model);a.actions=new Map();for(const [id,c] of asset.actions){a.actions.set(id+'.U',a.mixer.clipAction(c.U));a.actions.set(id+'.L',a.mixer.clipAction(c.L));}
+ if(a.blade)a.trail=createTrail(a,TRAIL[a.classId]);
  a.ready=true;
 }
 
 export function createCharacter(classId='mage',bodyType='male'){
  const root=new T.Group();root.name=classId+'_'+bodyType;root.userData.asset={classId,bodyType,style:'Sculpted stylized fantasy',version:2};
  const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,layers:{U:{id:null,action:null},L:{id:null,action:null}},
-  dispose(){a.disposed=true;root.removeFromParent();a.mixer?.stopAllAction();for(const m of a.materials||[])m.dispose();for(const g of a.geometries||[])g.dispose();a.skeleton?.dispose();}};
+  dispose(){a.disposed=true;a.trail?.mesh.removeFromParent();root.removeFromParent();a.mixer?.stopAllAction();for(const m of a.materials||[])m.dispose();for(const g of a.geometries||[])g.dispose();a.skeleton?.dispose();}};
  a.loaded=loadCharacter(classId,bodyType).then(asset=>{if(!a.disposed)attach(a,asset);return a;});
  return a;
 }
@@ -100,6 +118,7 @@ export function animateCharacter(a,p,time,dt=1/60){
  a.lean+=((dash?.5:0)-a.lean)*ease;const pitch=alive&&!dodge?(p.pitch||0):0;
  turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.hit*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
  if(a.drawn){const stab=a.attack==='rogue2';a.drawn.visible=stab;a.sheath.visible=!stab;}
+ if(a.trail)updateTrail(a,dt);
  a.ghost+=((dash?1:0)-a.ghost)*(1-Math.exp(-dt*20));for(const m of a.toon){m.userData.uniforms.uHit.value=a.hit;m.userData.uniforms.uGhost.value=a.ghost;}
 }
 

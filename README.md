@@ -24,6 +24,10 @@ Arquivos: `public/assets/rig.js` carrega os modelos e anima; `anim-state.js` dec
 
 Como os modelos foram feitos: conceito em imagem (pose A, punhos fechados) → malha texturizada (Tripo H3.1) → malha girada para olhar para +Z → esqueleto e clipes da biblioteca de combate (Meshy). `npm run prepare:assets` lê os arquivos brutos em `.local/rig/` (fora do Git), leva cada clipe para os seis esqueletos por diferença de rotação em relação à pose de repouso, reduz a textura para 1024 px e grava os GLBs e o `manifest.json`. `npm run test:assets` confere as regras de animação e os seis arquivos (ossos, pele, clipes, corrida sem deslocamento).
 
+Quarta classe: **Elfa** (lanceira; estocada de alcance longo, salto lunar e flecha de luz), com um único modelo.
+
+Imagem e sensação de jogo: `public/fx/post.js` desenha a cena em HDR com bloom, vinheta e um leve desvio de cor nos impactos (botão **Efeitos** no topo; desliga sozinho se a máquina não segurar 30 quadros por segundo). `public/fx/audio.js` sintetiza todos os sons no navegador (golpes, magias, passos e um ambiente por arena), sem arquivos de áudio. Golpes têm rastro luminoso na arma, tremor de câmera, uma pausa curta no acerto, números de dano e barra de vida sobre os rivais. **Q** (ou Tab, ou o botão do meio do mouse) trava a mira no rival mais próximo, como num duelo.
+
 Cenários: `public/world.js` monta as quatro arenas em código — céu em shader (estrelas, lua, nuvens, aurora, brasas), piso pintado com círculo rúnico luminoso, fundo próprio (catedral em ruínas, vulcão com rios de lava, floresta com lanternas, cidadela de gelo), partículas e névoa. As peças paradas são fundidas em uma malha por material para manter poucas chamadas de desenho.
 
 O Assassino arremessa com a mão vazia (as adagas ficam embainhadas nas coxas e uma só é sacada na estocada); a adaga voa girando.

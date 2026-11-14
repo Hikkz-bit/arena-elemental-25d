@@ -22,7 +22,10 @@ export const ACTIONS={
  mage1:{clip:'CastFling',from:.6,to:1.6,time:.55,once:true},
  mage2:{clip:'CastSky',from:.4,to:1.7,time:.8,once:true},
  rogue0:{clip:'Slash',from:.72,to:1.3,time:.42,once:true},
- rogue2:{clip:'Thrust',from:1.35,to:2.2,time:.45,once:true}
+ rogue2:{clip:'Thrust',from:1.35,to:2.2,time:.45,once:true},
+ elf0:{clip:'Thrust',from:1.35,to:2.2,time:.45,once:true},
+ elf1:{clip:'Thrust',from:1.3,to:2.2,time:.5,once:true,full:true},
+ elf2:{clip:'CastPush',from:.7,to:1.9,time:.6,once:true}
 };
 export const CLIP_NAMES=['Idle','Run','Jump','Slash','Thrust','Slam','CastPush','CastFling','CastSky','Roll','Parry','Death'];
 
