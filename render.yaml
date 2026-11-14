@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: arena-elemental-25d
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.0
