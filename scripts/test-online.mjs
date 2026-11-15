@@ -26,7 +26,7 @@ let dodge=false;const toA=toB+Math.PI;
 for(let i=0;i<45;i++){a.input({forward:1,yaw:toB});b.input({yaw:toA,fire:[i===5,false,false]});await wait(33);}
 for(let i=0;i<12;i++){a.input({strafe:1,yaw:toB,dash:i<3});b.input({yaw:toA});await wait(33);if(me(a,idA).burst?.kind==='dodge')dodge=true;}
 await wait(300);
-const end=me(b,idA);assert(Math.hypot(end.x-start.x,end.z-start.z)>3,'Bruno vê Ana se mover');assert(dodge,'o dash aparece no estado da sala');assert(end.dashCd>1,'o dash entra em recarga');
+const end=me(b,idA);assert(Math.hypot(end.x-start.x,end.z-start.z)>3,'Bruno vê Ana se mover');assert(dodge,'o dash aparece no estado da sala');assert(end.dashCd>0,'o dash entra em recarga');
 assert(a.room.events.some(e=>e.type==='cast'&&e.owner===idB)||me(a,idB).cd[0]>=0,'a habilidade do Bruno chega para a Ana');
 assert.equal(me(a,idB).connected,true);assert(!JSON.stringify(a.room).includes('"hash"'));
 await a.call('leave');await b.call('leave');a.ws.close();b.ws.close();

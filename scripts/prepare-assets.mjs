@@ -9,7 +9,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import * as T from '../public/vendor/three.js';
 
-const RAW=process.argv[2]||'.local/rig',OUT='public/assets/glb',SOURCE='knight-male',FPS=30,TEXTURE=1024;
+const RAW=process.argv[2]||'.local/rig',OUT='public/assets/glb',SOURCE='knight-male',FPS=30,TEXTURE=1536;
 const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female','elf-female'];
 // root: which parts of the hips translation survive. 'y' keeps the bob but no travel (the game moves the
 // character), 'xyz' keeps falls (attacks stay in place so they never slide or snap back), 'none' keeps the pose only. cut trims to [start,end] seconds.
@@ -83,7 +83,7 @@ function build(name,clips){
  const indices=copy(prim.indices,34963),skin=j.skins[0],inverseBind=copy(skin.inverseBindMatrices);
  // Texture: resized and recompressed; the toon shader does not need the original 2-4K bake.
  const image=j.images[j.textures[j.materials[prim.material].pbrMetallicRoughness.baseColorTexture.index].source],iv=j.bufferViews[image.bufferView],tmp=fs.mkdtempSync(path.join(os.tmpdir(),'arena-tex-')),src=path.join(tmp,'in.img'),dst=path.join(tmp,'out.jpg');
- fs.writeFileSync(src,g.bin.subarray(iv.byteOffset||0,(iv.byteOffset||0)+iv.byteLength));execFileSync('ffmpeg',['-v','error','-y','-i',src,'-vf',`scale=${TEXTURE}:${TEXTURE}:flags=lanczos`,'-q:v','2',dst]);const imageView=view(fs.readFileSync(dst));fs.rmSync(tmp,{recursive:true,force:true});
+ fs.writeFileSync(src,g.bin.subarray(iv.byteOffset||0,(iv.byteOffset||0)+iv.byteLength));execFileSync('ffmpeg',['-v','error','-y','-i',src,'-vf',`scale=${TEXTURE}:${TEXTURE}:flags=lanczos`,'-q:v','3',dst]);const imageView=view(fs.readFileSync(dst));fs.rmSync(tmp,{recursive:true,force:true});
  // Nodes keep their indices; joints are reset to the bind pose so the file is a clean rest pose.
  const nodes=j.nodes.map(n=>({...n}));for(const b of rig.bones){const p=new T.Vector3(),q=new T.Quaternion();b.local.decompose(p,q,new T.Vector3());const n=nodes[b.node];delete n.matrix;n.translation=p.toArray();n.rotation=q.toArray();n.scale=[1,1,1];}
  const restHips=new T.Vector3().setFromMatrixPosition(rig.hips.local),animations=[];

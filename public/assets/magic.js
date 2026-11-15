@@ -17,6 +17,10 @@ export function createMagic(scene){
   if(e.type==='cast'&&['fire','ice','bolt','light'].includes(e.kind)){const g=createSigil(e.kind==='fire'?0xff982e:e.kind==='light'?0xffe58a:0x61dfff,.5);g.position.set(e.x+Math.sin(e.yaw)*.65,e.y,e.z-Math.cos(e.yaw)*.65);g.rotation.y=-e.yaw;add(g,.44,age=>{g.children[0].rotation.z=age*2;g.scale.setScalar(.6+Math.sin(age/.44*Math.PI)*.4);});}
   if(e.type==='parry'){const p=players.find(p=>p.id===e.target),yaw=p?.yaw||0,g=createSigil(0xffac3d,.78);g.position.set(e.x+Math.sin(yaw)*.6,e.y+.2,e.z-Math.cos(yaw)*.6);g.rotation.y=-yaw;add(g,.5,age=>g.children[0].rotation.z=age*2);burst(e.x,e.y,e.z,0xffc16c,.5);}
   if(e.type==='hit'){burst(e.x,e.y,e.z,0xbceeff,.35);}
+  if(e.type==='block')burst(e.x,e.y+.1,e.z,0xbfd8ff,.3);
+  if(e.type==='deflect'){burst(e.x,e.y+.15,e.z,0xffcf6e,.9);burst(e.x,e.y+.15,e.z,0xfff3c2,.35);}
+  if(e.type==='break')burst(e.x,e.y+.2,e.z,0xff8a3c,.8);
+  if(e.type==='deathblow'){burst(e.x,e.y,e.z,0xff4a2e,1.5);burst(e.x,e.y,e.z,0xffe2b0,.6);}
   if(e.type==='explosion')burst(e.x,e.y,e.z,0xffac38,1.6);
   if(e.type==='strike'){
    const root=new T.Group();root.position.set(e.x,0,e.z);const pts=[];for(let branch=0;branch<5;branch++){let last=new T.Vector3(0,8,0);for(let i=1;i<=16;i++){const f=i/16,q=new T.Vector3(Math.sin(i*9+branch*5)*.42*Math.sin(Math.PI*f),8*(1-f),Math.cos(i*7+branch)*.4*Math.sin(Math.PI*f));pts.push(last,q);last=q;}}const geo=new T.BufferGeometry().setFromPoints(pts);root.add(new T.LineSegments(geo,new T.LineBasicMaterial({color:0xafffff,transparent:true,blending:T.AdditiveBlending,depthWrite:false})));const disc=createSigil(0x4dcaff,2.1);disc.rotation.x=-Math.PI/2;disc.position.y=.05;root.add(disc);const light=new T.PointLight(0x6acaff,12,8);light.position.y=1.5;root.add(light);add(root,.4,age=>{root.rotation.y=Math.sin(age*80)*.12;light.intensity=12*(1-age/.4);});burst(e.x,.4,e.z,0x56cfff,2);

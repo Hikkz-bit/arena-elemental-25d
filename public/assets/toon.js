@@ -1,28 +1,33 @@
 import * as T from '../vendor/three.js';
 
-// Anime-style shading: light falls in three flat bands, a rim catches the silhouette, and a dark hull draws the outline.
-let ramp;
-function bands(){
- if(!ramp){ramp=new T.DataTexture(new Uint8Array([118,118,118,255,196,196,196,255,255,255,255,255]),3,1,T.RGBAFormat);ramp.minFilter=ramp.magFilter=T.NearestFilter;ramp.generateMipmaps=false;ramp.needsUpdate=true;}
- return ramp;
-}
+// Character shading. The textures are already painted with their own light and detail, so the shader keeps
+// them almost as they are: a soft two-tone falloff from one key direction, a faint rim, and a thin outline.
+// It ignores the arena lights on purpose (they are strong and coloured, and washed the faces out);
+// each arena only sets the key direction and a light tint so the character still sits in the scene.
+const shared={uSun:{value:new T.Vector3(-.4,.8,.45).normalize()},uAmbient:{value:new T.Color(1.06,1.06,1.08)},uShade:{value:new T.Color(.66,.68,.8)}};
+export function setCharacterLight(direction,tint){shared.uSun.value.set(...direction).normalize();if(tint)shared.uAmbient.value.set(...tint);}
 
-export function toonMaterial(map){
- const uniforms={uHit:{value:0},uGhost:{value:0},uRim:{value:new T.Color(0xbfd9ff)}};
- const m=new T.MeshToonMaterial({map,gradientMap:bands(),emissive:0xffffff,emissiveMap:map,emissiveIntensity:.16});
+export function toonMaterial(map,color=0xffffff){
+ const uniforms={uHit:{value:0},uGhost:{value:0},uRim:{value:new T.Color(0xd6e4ff)},...shared};
+ const m=new T.MeshToonMaterial({map,color});
  m.userData.uniforms=uniforms;
  m.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float uHit;uniform float uGhost;uniform vec3 uRim;').replace('#include <opaque_fragment>',
-   'float rim=pow(1.-saturate(dot(normalize(vViewPosition),normal)),3.2);outgoingLight+=uRim*rim*.38;outgoingLight=mix(outgoingLight,vec3(.05,.32,.3)+uRim*rim,uGhost*.85);outgoingLight=mix(outgoingLight,vec3(1.,.32,.24),uHit*.55);\n#include <opaque_fragment>');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float uHit;uniform float uGhost;uniform vec3 uRim,uSun,uAmbient,uShade;').replace('#include <opaque_fragment>',
+   `vec3 sunView=normalize((viewMatrix*vec4(uSun,0.0)).xyz);float lit=smoothstep(-0.12,0.32,dot(normal,sunView));
+   float rim=pow(1.0-saturate(dot(normalize(vViewPosition),normal)),3.0);
+   outgoingLight=diffuseColor.rgb*mix(uShade,vec3(1.0),lit)*uAmbient+uRim*rim*0.14*lit;
+   outgoingLight=mix(outgoingLight,vec3(.05,.32,.3)+uRim*rim,uGhost*.85);outgoingLight=mix(outgoingLight,vec3(1.,.32,.24),uHit*.55);
+   #include <opaque_fragment>`);
  };
- m.customProgramCacheKey=()=>'arena-toon';
+ m.customProgramCacheKey=()=>'arena-painted';
  return m;
 }
 
-export function outlineMaterial(thickness=.011){
+// Inverted hull. `thickness` is set every frame from the camera distance so the line keeps about the same width on screen.
+export function outlineMaterial(thickness=.006){
  const uniforms={uOutline:{value:thickness}};
- const m=new T.MeshBasicMaterial({color:0x0a0d16,side:T.BackSide});
+ const m=new T.MeshBasicMaterial({color:0x1b1622,side:T.BackSide});
  m.userData.uniforms=uniforms;
  m.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);

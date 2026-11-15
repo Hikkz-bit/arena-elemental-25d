@@ -41,7 +41,8 @@ export function createAudio(){
  };
  function play(name,at){
   if(!enabled||!ctx||ctx.state!=='running'||!SOUNDS[name])return;let pan=0,volume=1;
-  if(at){const dx=at.x-listener.x,dz=at.z-listener.z,dist=Math.hypot(dx,dz);volume=1/(1+dist*.13);pan=dist>.3?(dx*Math.cos(listener.yaw)+dz*Math.sin(listener.yaw))/dist*.8:0;}
+  // Some events (a knockout, a respawn) carry no position: those play centred instead of producing an invalid pan.
+  if(at&&Number.isFinite(at.x)&&Number.isFinite(at.z)){const dx=at.x-listener.x,dz=at.z-listener.z,dist=Math.hypot(dx,dz);volume=1/(1+dist*.13);pan=dist>.3?(dx*Math.cos(listener.yaw)+dz*Math.sin(listener.yaw))/dist*.8:0;}
   SOUNDS[name](out(pan,volume),ctx.currentTime+.005);
  }
  function ambience(id){

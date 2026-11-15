@@ -7,7 +7,7 @@
       "classId": "knight",
       "bodyType": "male",
       "file": "knight-male.glb",
-      "bytes": 1848828,
+      "bytes": 1893884,
       "triangles": 28352,
       "bones": 24,
       "animations": [
@@ -38,7 +38,7 @@
       "classId": "knight",
       "bodyType": "female",
       "file": "knight-female.glb",
-      "bytes": 1939316,
+      "bytes": 2000528,
       "triangles": 28432,
       "bones": 24,
       "animations": [
@@ -69,7 +69,7 @@
       "classId": "mage",
       "bodyType": "male",
       "file": "mage-male.glb",
-      "bytes": 1894592,
+      "bytes": 1948596,
       "triangles": 29001,
       "bones": 24,
       "animations": [
@@ -100,7 +100,7 @@
       "classId": "mage",
       "bodyType": "female",
       "file": "mage-female.glb",
-      "bytes": 1961660,
+      "bytes": 2017752,
       "triangles": 29994,
       "bones": 24,
       "animations": [
@@ -131,7 +131,7 @@
       "classId": "rogue",
       "bodyType": "male",
       "file": "rogue-male.glb",
-      "bytes": 1904076,
+      "bytes": 1942804,
       "triangles": 29488,
       "bones": 24,
       "animations": [
@@ -162,7 +162,7 @@
       "classId": "rogue",
       "bodyType": "female",
       "file": "rogue-female.glb",
-      "bytes": 1879016,
+      "bytes": 1920960,
       "triangles": 29558,
       "bones": 24,
       "animations": [
@@ -193,7 +193,7 @@
       "classId": "elf",
       "bodyType": "female",
       "file": "elf-female.glb",
-      "bytes": 1900328,
+      "bytes": 1958184,
       "triangles": 28584,
       "bones": 24,
       "animations": [

@@ -9,7 +9,7 @@ import {toonMaterial,outlineMaterial} from './toon.js';
 // actions, split into an upper and a lower body layer, and blended by the player state.
 const loader=new GLTFLoader(),assets=new Map(),LOWER=new Set(LOWER_BONES),BASE=new URL('./glb/',import.meta.url).href;
 const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8,elf:5.2},TRAIL={knight:0xbfe4ff,rogue:0x7dffd0,elf:0xfff0a8},SWINGS=new Set(['knight0','knight1','knight2','rogue2','elf0','elf1']),UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
-const q1=new T.Quaternion(),q2=new T.Quaternion(),q3=new T.Quaternion();
+const q1=new T.Quaternion(),q2=new T.Quaternion(),q3=new T.Quaternion(),q4=new T.Vector3();
 
 function prepare(gltf){
  const clips=new Map(gltf.animations.map(c=>[c.name,c])),actions=new Map();
@@ -37,7 +37,7 @@ function mount(a,boneName,kind,{forward,edge,along=8,scale=1,grip=0,out=0}){
  const weapon=createWeapon(kind),y=new T.Vector3(...forward).normalize(),x=new T.Vector3(...edge).normalize(),z=new T.Vector3().crossVectors(x,y).normalize();x.crossVectors(y,z);
  const desired=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z)),boneRotation=parentRotation(bone,a.model,new T.Quaternion()).multiply(bone.quaternion);
  weapon.quaternion.copy(boneRotation.invert().multiply(desired));weapon.scale.setScalar(100*scale);weapon.position.set(0,along,0);weapon.translateY(-grip*100*scale);weapon.translateZ(-out);
- weapon.traverse(o=>{if(o.isMesh){a.geometries.push(o.geometry);a.materials.push(o.material);}});bone.add(weapon);a.weapons.push(weapon);return weapon;
+ weapon.traverse(o=>{if(o.isMesh){const painted=toonMaterial(null,o.material.emissiveIntensity>1?o.material.color.clone().multiplyScalar(1.5):o.material.color);o.material.dispose();o.material=painted;a.geometries.push(o.geometry);a.materials.push(painted);}});bone.add(weapon);a.weapons.push(weapon);return weapon;
 }
 
 // A ribbon that follows the blade during a swing: the last few tip and base positions, fading out.
@@ -60,10 +60,10 @@ function attach(a,asset){
  const meshes=[];model.traverse(o=>{if(o.isBone)a.bones[o.name]=o;if(o.isSkinnedMesh)meshes.push(o);});
  for(const mesh of meshes){
   const toon=toonMaterial(mesh.material.map);mesh.material=toon;mesh.castShadow=true;mesh.frustumCulled=false;a.materials.push(toon);a.toon.push(toon);a.skeleton=mesh.skeleton;
-  const outline=new T.SkinnedMesh(mesh.geometry,outlineMaterial());outline.bind(mesh.skeleton,mesh.bindMatrix);outline.frustumCulled=false;mesh.parent.add(outline);a.materials.push(outline.material);a.outline=outline;
+  const outline=new T.SkinnedMesh(mesh.geometry,outlineMaterial());outline.bind(mesh.skeleton,mesh.bindMatrix);outline.frustumCulled=false;mesh.parent.add(outline);outline.onBeforeRender=(renderer,scene,camera)=>{outline.material.userData.uniforms.uOutline.value=T.MathUtils.clamp(camera.position.distanceTo(q4.setFromMatrixPosition(a.root.matrixWorld))*.0015,.003,.011);};a.materials.push(outline.material);a.outline=outline;
  }
  // The model faces +Z; its right hand is on -X.
- if(a.classId==='knight'){a.blade={weapon:mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.74}),tip:1.3,base:.35};mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.8});}
+ if(a.classId==='knight'){a.blade={weapon:mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.68}),tip:1.3,base:.35};mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.6});}
  else if(a.classId==='mage')mount(a,'RightHand','staff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
  else if(a.classId==='elf')a.blade={weapon:mount(a,'RightHand','spear',{forward:[0,.18,1],edge:[0,-1,0],grip:.15,scale:.95}),tip:1.9,base:1.25};
  else{
@@ -106,7 +106,7 @@ export function animateCharacter(a,p,time,dt=1/60){
  a.lastCast=cast;if(a.attack&&(a.attackLeft-=dt)<=0)a.attack=null;
  // Melee swings, stuns and blocks come straight from the server state; a new one restarts the clip.
  const melee=p.hp>0?meleeOf(a.classId,p.attack):null;if(melee&&p.attack.id!==a.meleeId){a.meleeId=p.attack.id;restart=true;}a.melee=melee&&p.attack.kind!=='guardbreak'?melee:null;
- if((p.stun||0)>a.lastStun+.1||(p.guard||0)>a.lastGuard+.1)restart=true;a.lastStun=p.stun||0;a.lastGuard=p.guard||0;
+ if((p.stun||0)>a.lastStun+.1||(p.guard||0)>a.lastGuard+.1||(p.broken>0&&!a.wasBroken))restart=true;a.wasBroken=p.broken>0;a.lastStun=p.stun||0;a.lastGuard=p.guard||0;
  const layers=pickLayers({...p,classId:a.classId},a.attack),move=p.move||{f:p.moving?1:0,s:0},legs=legTwist(move.f,move.s),running=layers.lower==='Run';
  const runScale=RUN_SPEED[a.classId]/4.2*(p.slow>0?.55:1)*(legs.backwards?-.85:1);
  setLayer(a,'L',layers.lower,restart,runScale);setLayer(a,'U',layers.upper,restart,runScale);

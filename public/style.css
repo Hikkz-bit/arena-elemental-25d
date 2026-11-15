@@ -5,7 +5,8 @@
 #floaters{position:fixed;inset:0;pointer-events:none;overflow:hidden}.floater{position:absolute;font-weight:900;font-size:22px;letter-spacing:.5px;text-shadow:0 2px 0 #000b,0 0 14px #000c;pointer-events:none;animation:floatUp .9s ease-out forwards}.floater.big{font-size:34px}@keyframes floatUp{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}15%{opacity:1;transform:translate(-50%,-70%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-210%) scale(1)}}
 #lockon{position:fixed;width:56px;height:56px;margin:-28px 0 0 -28px;border:2px solid #ffd66b;border-radius:50%;box-shadow:0 0 16px #ffd66b88,inset 0 0 10px #ffd66b55;pointer-events:none;}#lockon::before{content:'';position:absolute;inset:-12px;border:2px dashed #ffd66b88;border-radius:50%;animation:lockSpin 2.6s linear infinite}@keyframes lockSpin{to{transform:rotate(360deg)}}
 
-.stamina{height:5px;margin-top:5px;background:#0c161d;border-radius:3px;overflow:hidden}.stamina i{display:block;height:100%;width:100%;background:#f0d472;transition:width .08s}.stamina i.low{background:#ff7a5c}
+.stamina{height:5px;margin-top:5px;background:#0c161d;border-radius:3px;overflow:hidden}.stamina i{display:block;height:100%;width:0;margin:0 auto;background:#f0b24a;transition:width .08s}.stamina i.low{background:#ff5a3c}
+#lockon b{position:absolute;left:50%;top:calc(100% + 30px);width:84px;height:5px;margin-left:-42px;background:#0c161dcc;border-radius:3px;overflow:hidden}#lockon b u{display:block;height:100%;width:0;margin:0 auto;background:#f0b24a}#lockon.open b u{background:#ff5a3c}
 /* Guard arcs: a ring whose left, top or right quarter lights up. */
 #guard{position:fixed;left:50%;top:70%;width:92px;height:92px;margin:-46px 0 0 -46px;pointer-events:none}
 #guard i,#lockon i{position:absolute;inset:0;border-radius:50%;border:6px solid transparent;transition:border-color .06s,transform .06s}

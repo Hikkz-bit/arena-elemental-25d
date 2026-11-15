@@ -6,7 +6,7 @@ Protótipo independente em primeira pessoa ou sobre o ombro, com personagens 3D 
 
 `npm ci` e `npm start`. Abra `http://localhost:4182/`. Clique em **Treinar com alvos** para jogar sozinho ou crie uma sala PvP e envie o convite a até dois amigos. O criador inicia quando houver pelo menos dois jogadores.
 
-WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Ctrl: parry, com recarga zerada ao bloquear. Shift: dash, uma esquiva curta na direção em que você anda (para a frente se estiver parado), com 0,22 s de invulnerabilidade e 2,5 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
+WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Ctrl: parry, com recarga zerada ao bloquear. Shift: passo de esquiva na direção em que você anda (para a frente se estiver parado), com um instante de invulnerabilidade e 1 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
 
 ## Personagens e assets
 
@@ -30,15 +30,16 @@ Imagem e sensação de jogo: `public/fx/post.js` desenha a cena em HDR com bloom
 
 ## Combate de duelo
 
-Inspirado nos jogos de duelo com guarda direcional, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
+Duelo com guarda direcional e postura, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
 
 - **Guarda** em três direções (esquerda, cima, direita). Com a mira travada (**Q**), mover o mouse escolhe a direção; sem trava, use as setas ← ↑ →. O anel na base da tela mostra a sua guarda; o anel em volta do rival mostra a dele, já espelhado.
-- **Golpe leve** (clique, ou F) e **golpe pesado** (botão direito, ou G) saem do lado da guarda. O pesado demora mais, tira mais vida e ainda arranha quando bloqueado.
-- **Bloqueio** é automático: se você está de frente, parado de ataques e com a guarda no lado de onde o golpe vem, ele não entra. Quando o rival prepara um golpe, o lado acende em vermelho no anel dele — ponha a sua guarda ali.
-- **Parry** (Ctrl) no instante do golpe atordoa quem atacou. **Quebra de guarda** (E) atordoa quem só está bloqueando, mas ricocheteia em quem já está atacando.
-- **Estamina**: tudo custa fôlego e ele volta depois de 0,7 s sem atacar. Com a mira travada você anda em guarda, mais devagar.
-- As habilidades 1, 2 e 3 de cada classe continuam, agora como especiais com recarga, e não são bloqueadas pela guarda (só por parry ou esquiva).
-- No treino, o **Rival** se aproxima, troca de guarda e ataca; o **Alvo** só defende, para praticar quebra de guarda.
+- **Golpe leve** (clique, ou F) e **golpe pesado** (botão direito, ou G) saem do lado da guarda. Não custam nada e emendam um no outro: apertar de novo durante a recuperação já solta o próximo.
+- **Bloqueio** é automático quando a sua guarda está no lado de onde o golpe vem (o lado acende em vermelho no anel do rival). Bloquear enche a sua **postura**.
+- **Deflexão**: levar a guarda para o lado certo no último instante (ou apertar Ctrl) desvia o golpe com faíscas, não custa nada a você e enche a postura de quem atacou.
+- **Postura** é a barra laranja. Quando enche, a guarda desaba e o lutador fica aberto; o próximo golpe que entrar é um **golpe fatal**, com dano triplo. Ela esvazia sozinha depois de um segundo sem pressão.
+- **Quebra de guarda** (E) castiga quem só defende, mas ricocheteia em quem já está atacando. **Shift** é um passo rápido de esquiva (2,8 m, 1 s de recarga) que também cancela a recuperação de um golpe.
+- As habilidades 1, 2 e 3 de cada classe continuam, como especiais com recarga, e não são bloqueadas pela guarda (só por parry ou esquiva).
+- No treino, o **Rival** se aproxima, ataca em sequências curtas e às vezes lê o seu golpe; o **Alvo** só defende.
 
 Cenários: `public/world.js` monta as quatro arenas em código — céu em shader (estrelas, lua, nuvens, aurora, brasas), piso pintado com círculo rúnico luminoso, fundo próprio (catedral em ruínas, vulcão com rios de lava, floresta com lanternas, cidadela de gelo), partículas e névoa. As peças paradas são fundidas em uma malha por material para manter poucas chamadas de desenho.
 

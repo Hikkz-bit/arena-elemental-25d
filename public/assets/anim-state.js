@@ -19,12 +19,13 @@ export const ACTIONS={
  Walk:{clip:'GuardWalk'},
  Block:{clip:'Block',from:.5,to:1.05,time:.35,once:true},
  Stagger:{clip:'Stagger',from:.4,to:1.4,time:.8,once:true},
- light0:{clip:'LeftSlash',from:1.05,to:1.78,time:.58,once:true},
- light1:{clip:'Overhead',from:.66,to:1.37,time:.58,once:true},
- light2:{clip:'Slash',from:.6,to:1.3,time:.58,once:true},
- heavy0:{clip:'LeftSlash',from:.78,to:1.85,time:1.07,once:true},
- heavy1:{clip:'Hammer',from:.9,to:1.87,time:1.07,once:true},
- heavy2:{clip:'WideSlash',from:.23,to:1.3,time:1.07,once:true},
+ Broken:{clip:'Stagger',from:.45,to:.95,time:.45,once:true},
+ light0:{clip:'LeftSlash',from:1.11,to:1.66,time:.42,once:true},
+ light1:{clip:'Overhead',from:.71,to:1.26,time:.42,once:true},
+ light2:{clip:'Slash',from:.66,to:1.21,time:.42,once:true},
+ heavy0:{clip:'LeftSlash',from:.82,to:1.77,time:.82,once:true},
+ heavy1:{clip:'Hammer',from:.92,to:1.87,time:.82,once:true},
+ heavy2:{clip:'WideSlash',from:.28,to:1.22,time:.82,once:true},
  bash:{clip:'Bash',from:.77,to:1.63,time:.72,once:true},
  kick:{clip:'Kick',from:.37,to:1.14,time:.72,once:true},
  knight0:{clip:'Slash',from:.5,to:1.3,time:.5,once:true},
@@ -53,6 +54,7 @@ export function pickLayers(p,attack){
  const kind=p.burst?.kind;
  if(kind==='dodge')return {upper:'Roll',lower:'Roll'};
  if(kind==='dash')return {upper:'Dash',lower:'Dash'};
+ if(p.broken>0)return {upper:'Broken',lower:'Broken'};
  if(p.stun>0)return {upper:'Stagger',lower:'Stagger'};
  const melee=meleeOf(p.classId,p.attack);if(melee)return {upper:melee,lower:melee};
  const air=p.y>.1,base=air?'Jump':p.moving?(p.guardMode?'Walk':'Run'):'Idle';

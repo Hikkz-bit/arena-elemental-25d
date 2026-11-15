@@ -21,6 +21,7 @@ assert.deepEqual(pickLayers({...alive,hp:0,burst:{kind:'dodge'},parry:1},'knight
 assert.deepEqual(pickLayers({...alive,classId:'mage',attack:{kind:'heavy',dir:0}},null),{upper:'heavy0',lower:'heavy0'},'a melee swing uses the whole body');
 assert.deepEqual(pickLayers({...alive,classId:'knight',attack:{kind:'guardbreak',dir:1}},null),{upper:'bash',lower:'bash'});assert.equal(meleeOf('rogue',{kind:'guardbreak',dir:2}),'kick');assert.equal(meleeOf('elf',null),null);
 assert.deepEqual(pickLayers({...alive,stun:.4,attack:{kind:'light',dir:1}},null),{upper:'Stagger',lower:'Stagger'},'a stun interrupts everything but death and dodge');
+assert.deepEqual(pickLayers({...alive,stun:1,broken:1},null),{upper:'Broken',lower:'Broken'},'a collapsed guard holds the bent pose');
 assert.deepEqual(pickLayers({...alive,guard:.2,moving:true,guardMode:true},null),{upper:'Block',lower:'Walk'},'blocking while walking in guard');
 assert.deepEqual(pickLayers({...alive,moving:true,guardMode:true},null),{upper:'Walk',lower:'Walk'});
 for(const kind of ['light','heavy'])for(const dir of [0,1,2])assert(ACTIONS[kind+dir].once,kind+dir);

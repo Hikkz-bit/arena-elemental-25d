@@ -7,13 +7,13 @@ export {T};
 // everything else is scenery: a shader sky, painted floor, backdrop, lights, particles and drifting mist.
 const THEMES={
  abbey:{top:0x070d1f,horizon:0x2a3c5c,below:0x0b1220,glow:0x6f86b8,fog:0x1c2c40,density:.022,stars:1,moon:[-.45,.5,-.74],moonColor:0xe9efd8,cloud:.5,cloudColor:0x33455f,aurora:0,ember:0,
-  stone:0x7b868a,trim:0xb4c0b0,dark:0x232f36,accent:0xffb85c,floor:['#414e53','#4d5b60','#333e43'],outer:['#1b2428','#222d31'],hemi:[0xbfd6ff,0x141c22,1.25],sun:[0xcfe0ff,2,[-8,16,-7]],rim:0x7fa2ff,particles:'motes',mist:0x8fa6c4},
+  stone:0x7b868a,trim:0xb4c0b0,dark:0x232f36,accent:0xffb85c,floor:['#414e53','#4d5b60','#333e43'],outer:['#1b2428','#222d31'],hemi:[0xbfd6ff,0x141c22,1.25],sun:[0xcfe0ff,2,[-8,16,-7]],rim:0x7fa2ff,particles:'motes',mist:0x8fa6c4,tint:[1,1.03,1.1]},
  volcano:{top:0x150a12,horizon:0x5a1f1a,below:0x2a0b08,glow:0xff5a1e,fog:0x3b1a1c,density:.023,stars:.3,moon:null,moonColor:0xffffff,cloud:.62,cloudColor:0x2a1418,aurora:0,ember:1,
-  stone:0x5a3f4a,trim:0xb8795a,dark:0x1c1216,accent:0xff6a2c,floor:['#3f3038','#4a373f','#30252c'],outer:['#1a0f10','#241416'],hemi:[0xffb090,0x5a1c10,1.25],sun:[0xffc08a,1.9,[6,14,8]],rim:0xff5a2a,particles:'embers',mist:0x6b2a1c},
+  stone:0x5a3f4a,trim:0xb8795a,dark:0x1c1216,accent:0xff6a2c,floor:['#3f3038','#4a373f','#30252c'],outer:['#1a0f10','#241416'],hemi:[0xffb090,0x5a1c10,1.25],sun:[0xffc08a,1.9,[6,14,8]],rim:0xff5a2a,particles:'embers',mist:0x6b2a1c,tint:[1.12,1,.92]},
  forest:{top:0x06181c,horizon:0x1d4a45,below:0x071512,glow:0x4fd6a0,fog:0x16332f,density:.025,stars:.6,moon:[.5,.6,-.62],moonColor:0xd8ffe6,cloud:.45,cloudColor:0x18403a,aurora:0,ember:0,
-  stone:0x4b6c60,trim:0x8fbd95,dark:0x12211c,accent:0x8affb9,floor:['#33503f','#3d5a49','#283d35'],outer:['#16291f','#1d3527'],hemi:[0xbff5dc,0x0f1c16,1.25],sun:[0xd6ffe6,1.8,[-6,15,6]],rim:0x66ffb0,particles:'fireflies',mist:0x6fd0a8},
+  stone:0x4b6c60,trim:0x8fbd95,dark:0x12211c,accent:0x8affb9,floor:['#33503f','#3d5a49','#283d35'],outer:['#16291f','#1d3527'],hemi:[0xbff5dc,0x0f1c16,1.25],sun:[0xd6ffe6,1.8,[-6,15,6]],rim:0x66ffb0,particles:'fireflies',mist:0x6fd0a8,tint:[1,1.09,1.02]},
  glacier:{top:0x081530,horizon:0x4d7ba6,below:0x1a2c44,glow:0x9fd8ff,fog:0x4a6c8c,density:.019,stars:.9,moon:[.3,.42,-.86],moonColor:0xf2fbff,cloud:.35,cloudColor:0x6b8fb0,aurora:1,ember:0,
-  stone:0x93b5c8,trim:0xe2f5f7,dark:0x2b4156,accent:0x9adcff,floor:['#5b7890','#6a889f','#4d687f'],outer:['#6f8fa8','#86a6bd'],hemi:[0xd6ecff,0x24384c,1.45],sun:[0xe2f0ff,2,[-8,16,7]],rim:0x9fe0ff,particles:'snow',mist:0xcfe6f5}
+  stone:0x93b5c8,trim:0xe2f5f7,dark:0x2b4156,accent:0x9adcff,floor:['#5b7890','#6a889f','#4d687f'],outer:['#6f8fa8','#86a6bd'],hemi:[0xd6ecff,0x24384c,1.45],sun:[0xe2f0ff,2,[-8,16,7]],rim:0x9fe0ff,particles:'snow',mist:0xcfe6f5,tint:[1.02,1.06,1.12]}
 };
 
 const SKY_VERTEX=`varying vec3 vDir;void main(){vDir=position;vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_Position=p.xyww;}`;
@@ -179,6 +179,6 @@ export function buildWorld(scene,id){
    positions[i*3]=x;positions[i*3+1]=y;positions[i*3+2]=z;}points.geometry.attributes.position.needsUpdate=true;});
  for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=11+rand()*7,wisp=new T.Sprite(new T.SpriteMaterial({map:glowTexture(),color:p.mist,transparent:true,opacity:.07+rand()*.05,depthWrite:false}));wisp.scale.set(11+rand()*6,3+rand()*1.5,1);live(wisp,Math.sin(a)*r,.5+rand()*.9,Math.cos(a)*r);animated.push(t=>{const b=a+t*.02*(i%2?1:-1);wisp.position.x=Math.sin(b)*r;wisp.position.z=Math.cos(b)*r;});}
 
- return {group,accent:p.accent,update(t){sky.material.uniforms.uTime.value=t;for(const step of animated)step(t);},
+ return {group,accent:p.accent,sun:p.sun[2],tint:p.tint,update(t){sky.material.uniforms.uTime.value=t;for(const step of animated)step(t);},
   dispose(){scene.remove(group);const geometries=new Set(),materials=new Set(),textures=new Set();group.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){materials.add(m);for(const key of ['map','emissiveMap'])if(m[key]&&m[key]!==glowShared)textures.add(m[key]);}});geometries.forEach(x=>x.dispose());materials.forEach(x=>x.dispose());textures.forEach(x=>x.dispose());}};
 }
