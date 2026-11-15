@@ -6,7 +6,7 @@ Protótipo independente em primeira pessoa ou sobre o ombro, com personagens 3D 
 
 `npm ci` e `npm start`. Abra `http://localhost:4182/`. Clique em **Treinar com alvos** para jogar sozinho ou crie uma sala PvP e envie o convite a até três amigos (a sala comporta quatro jogadores). O criador inicia quando houver pelo menos dois jogadores.
 
-WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Ctrl: parry, com recarga zerada ao bloquear. Shift: passo de esquiva na direção em que você anda (para a frente se estiver parado), com um instante de invulnerabilidade e 1 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
+WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Botão direito do mouse ou Ctrl: parry, com recarga zerada ao bloquear. Shift: passo de esquiva na direção em que você anda (para a frente se estiver parado), com um instante de invulnerabilidade e 1 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
 
 ## Personagens e assets
 
@@ -33,9 +33,9 @@ Imagem e sensação de jogo: `public/fx/post.js` desenha a cena em HDR com bloom
 Duelo com guarda direcional e postura, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
 
 - **Guarda** em três direções (esquerda, cima, direita). Com a mira travada (**Q**), mover o mouse escolhe a direção; sem trava, use as setas ← ↑ →. O anel na base da tela mostra a sua guarda; o anel em volta do rival mostra a dele, já espelhado.
-- **Golpe leve** (clique, ou F) e **golpe pesado** (botão direito, ou G) saem do lado da guarda. Não custam nada e emendam um no outro: apertar de novo durante a recuperação já solta o próximo.
+- **Golpe leve** (clique, ou F) e **golpe pesado** (G) saem do lado da guarda. Não custam nada e emendam um no outro: apertar de novo durante a recuperação já solta o próximo.
 - **Bloqueio** é automático quando a sua guarda está no lado de onde o golpe vem (o lado acende em vermelho no anel do rival). Bloquear enche a sua **postura**.
-- **Deflexão**: levar a guarda para o lado certo no último instante (ou apertar Ctrl) desvia o golpe com faíscas, não custa nada a você e enche a postura de quem atacou.
+- **Deflexão**: levar a guarda para o lado certo no último instante (ou apertar o botão direito, ou Ctrl) desvia o golpe com faíscas, não custa nada a você e enche a postura de quem atacou.
 - **Postura** é a barra laranja. Quando enche, a guarda desaba e o lutador fica aberto; o próximo golpe que entrar é um **golpe fatal**, com dano triplo. Ela esvazia sozinha depois de um segundo sem pressão.
 - **Quebra de guarda** (E) castiga quem só defende, mas ricocheteia em quem já está atacando. **Shift** é um passo rápido de esquiva (2,8 m, 1 s de recarga) que também cancela a recuperação de um golpe.
 - As habilidades 1, 2 e 3 de cada classe continuam, como especiais com recarga, e não são bloqueadas pela guarda (só por parry ou esquiva).
