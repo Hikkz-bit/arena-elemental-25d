@@ -1,4 +1,4 @@
-export const BOUNDS={x:11.5,z:9.5},PILLARS=[[-7,-4],[7,-4],[-7,4],[7,4]],RADIUS=.38;
+export const BOUNDS={x:15,z:12.5},PILLARS=[[-9,-5.5],[9,-5.5],[-9,5.5],[9,5.5]],RADIUS=.38;
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const forward=yaw=>({x:Math.sin(yaw),z:-Math.cos(yaw)});
 export function move(p,dx,dz){const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.18));for(let i=0;i<steps;i++){p.x=clamp(p.x+dx/steps,-BOUNDS.x,BOUNDS.x);p.z=clamp(p.z+dz/steps,-BOUNDS.z,BOUNDS.z);for(const [x,z] of PILLARS){const vx=p.x-x,vz=p.z-z,d=Math.hypot(vx,vz),r=.72+RADIUS;if(d<r){p.x=x+(d?vx/d:1)*r;p.z=z+(d?vz/d:0)*r;}}}}

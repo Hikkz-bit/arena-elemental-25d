@@ -5,11 +5,12 @@ import {createWeapon} from './models.js';
 import {ACTIONS,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from './anim-state.js';
 import {toonMaterial,outlineMaterial} from './toon.js';
 import {createPoseLayer,beginPose,endPose} from './pose-layer.js';
+import {CLASSES,bodyOf} from '../catalog.js';
 
 // Sculpted, skinned characters. Each GLB carries its own copy of the 12 clips; here they are cut into
 // actions, split into an upper and a lower body layer, and blended by the player state.
 const loader=new GLTFLoader(),assets=new Map(),LOWER=new Set(LOWER_BONES),BASE=new URL('./glb/',import.meta.url).href;
-const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8,elf:5.2},TRAIL={knight:0xbfe4ff,rogue:0x7dffd0,elf:0xfff0a8},SWINGS=new Set(['knight0','knight1','knight2','rogue2','elf0','elf1']),UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
+const RUN_SPEED={mage:4.6,knight:3.8,rogue:5.8,elf:5.2,archer:5.4,druid:4.4},TRAIL={knight:0xbfe4ff,rogue:0x7dffd0,elf:0xfff0a8,archer:0xd8f0a0},SWINGS=new Set(['knight0','knight1','knight2','rogue2','elf0','elf1']),UP=new T.Vector3(0,1,0),RIGHT=new T.Vector3(1,0,0);
 const q1=new T.Quaternion(),q2=new T.Quaternion(),q3=new T.Quaternion(),q4=new T.Vector3();
 
 function prepare(gltf){
@@ -23,9 +24,9 @@ function prepare(gltf){
  let triangles=0;gltf.scene.traverse(o=>{if(o.isMesh)triangles+=o.geometry.index.count/3;});
  return {scene:gltf.scene,actions,triangles};
 }
-// The elf has a single model.
-export function loadCharacter(classId,bodyType){const key=classId+'-'+(classId==='elf'?'female':bodyType);if(!assets.has(key))assets.set(key,loader.loadAsync(BASE+key+'.glb').then(prepare));return assets.get(key);}
-export const preloadCharacters=()=>Promise.all([...['mage','knight','rogue'].flatMap(c=>['male','female'].map(b=>loadCharacter(c,b))),loadCharacter('elf','female')]);
+// Some classes have a single model (see bodyOf).
+export function loadCharacter(classId,bodyType){const key=classId+'-'+bodyOf(classId,bodyType);if(!assets.has(key))assets.set(key,loader.loadAsync(BASE+key+'.glb').then(prepare));return assets.get(key);}
+export const preloadCharacters=()=>Promise.all(Object.keys(CLASSES).flatMap(c=>(CLASSES[c].body?[CLASSES[c].body]:['male','female']).map(b=>loadCharacter(c,b))));
 
 // Rotation of a bone's parent chain, in the space of the model root.
 function parentRotation(bone,model,out){out.identity();for(let o=bone.parent;o&&o!==model;o=o.parent)out.premultiply(o.quaternion);return out;}
@@ -67,7 +68,12 @@ function attach(a,asset){
  if(a.classId==='knight'){a.blade={weapon:mount(a,'RightHand','sword',{forward:[0,.12,1],edge:[0,-1,0],grip:.035,scale:.68}),tip:1.3,base:.35};mount(a,'LeftForeArm','shield',{forward:[0,1,0],edge:[0,0,1],along:14,out:6,scale:.6});}
  else if(a.classId==='mage')mount(a,'RightHand','staff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
  else if(a.classId==='elf')a.blade={weapon:mount(a,'RightHand','spear',{forward:[0,.18,1],edge:[0,-1,0],grip:.15,scale:.95}),tip:1.9,base:1.25};
- else{
+ else if(a.classId==='druid')mount(a,'RightHand','druidstaff',{forward:[0,.35,1],edge:[0,-1,0],grip:.05,scale:.95});
+ else if(a.classId==='archer'){
+  // Bow in the left hand (it stands upright once the arm is raised), quiver across the back, and a knife on the thigh that is only drawn for melee.
+  mount(a,'LeftHand','bow',{forward:[0,.1,1],edge:[0,1,0],scale:.82});mount(a,'Spine02','quiver',{forward:[-.35,1,0],edge:[-1,-.35,0],along:6,out:-13,scale:.8});
+  a.sheath=mount(a,'RightUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:-11,scale:.5});a.drawn=mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});a.drawn.visible=false;a.blade={weapon:a.drawn,tip:.85,base:.25};
+ }else{
   // The assassin keeps both daggers sheathed on the thighs and throws with an empty hand; one is drawn only for the stab.
   a.sheath=mount(a,'RightUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:-11,scale:.5});mount(a,'LeftUpLeg','dagger',{forward:[0,-1,.12],edge:[0,0,-1],along:10,out:11,scale:.5});
   a.drawn=mount(a,'RightHand','dagger',{forward:[0,.1,1],edge:[0,-1,0],grip:.03,scale:.62});a.drawn.visible=false;a.blade={weapon:a.drawn,tip:.85,base:.25};

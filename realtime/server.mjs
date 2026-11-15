@@ -1,4 +1,4 @@
-import {CLASSES,MAPS,classOf} from '../public/catalog.js';
+import {CLASSES,MAPS,MODES,classOf} from '../public/catalog.js';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -72,6 +72,11 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
       if(m.bodyType!==undefined&&!['male','female'].includes(m.bodyType))fail('Personagem inválido.');
       if(m.bodyType!==undefined)p.bodyType=m.bodyType;
       if(m.mapId!==undefined){if(entry.state.host!==p.id)fail('Só o criador escolhe o cenário.',403);if(!Object.hasOwn(MAPS,m.mapId))fail('Cenário inválido.');}
+      if(m.mode!==undefined){if(entry.state.host!==p.id)fail('Só o criador escolhe o modo.',403);if(!Object.hasOwn(MODES,m.mode))fail('Modo inválido.');if(entry.state.training)fail('O treino é sempre todos contra todos.',409);entry.state.mode=m.mode;}
+      // Teams are the even and the odd slots: changing team means moving to a free slot of the other parity.
+      if(m.swapTeam===true){const free=[...Array(MAX).keys()].find(i=>i%2!==p.slot%2&&!entry.state.players.some(q=>q.slot===i));if(free!==undefined){p.slot=free;p.wantsSwap=false;}
+       // With the other team full, two players trade places once each of them has asked for it (asking again withdraws the request).
+       else if(p.wantsSwap)p.wantsSwap=false;else{const other=entry.state.players.find(q=>q.slot%2!==p.slot%2&&q.wantsSwap);if(other){[p.slot,other.slot]=[other.slot,p.slot];other.wantsSwap=false;}else p.wantsSwap=true;}}
       if(m.classId!==undefined){p.classId=m.classId;const profile=classOf(p.classId);Object.assign(p,{hp:profile.hp,maxHp:profile.hp,speed:profile.speed,cd:[0,0,0],input:idle(),burst:null,parry:0,parryCd:0});}
       if(m.mapId!==undefined)entry.state.mapId=m.mapId;
       result={room:view(entry)};
@@ -79,7 +84,7 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
       if(entry.state.host!==p.id)fail('Só o criador pode iniciar.',403);
       if(!['lobby','finished'].includes(entry.state.phase))fail('A partida já começou.',409);
       if(entry.connections.size<2&&!entry.state.training)fail('Aguarde pelo menos um amigo.');
-      reset(entry.state,now);result={room:view(entry)};
+      for(const q of entry.state.players)q.wantsSwap=false;reset(entry.state,now);result={room:view(entry)};
      }else if(m.action==='leave'){detach(ws,true);result={ok:true};}
      else fail('Ação desconhecida.');
     }

@@ -1,12 +1,12 @@
 # Arena Elemental — Fronteira 3D
 
-Protótipo independente em primeira pessoa ou sobre o ombro, com personagens 3D esculpidos, animação por esqueleto e cenários 3D. Usa as mesmas três classes, quatro arenas e regras de parry do jogo original. O jogo original não é alterado.
+Protótipo independente em primeira pessoa ou sobre o ombro, com personagens 3D esculpidos, animação por esqueleto e cenários 3D. Seis classes, quatro arenas, duelo de postura e dois modos (todos contra todos e 2 contra 2). O jogo original não é alterado.
 
 ## Jogar
 
-`npm ci` e `npm start`. Abra `http://localhost:4182/`. Clique em **Treinar com alvos** para jogar sozinho ou crie uma sala PvP e envie o convite a até três amigos (a sala comporta quatro jogadores). O criador inicia quando houver pelo menos dois jogadores.
+`npm ci` e `npm start`. Abra `http://localhost:4182/`. Clique em **Treinar com alvos** para jogar sozinho ou crie uma sala PvP e envie o convite a até três amigos (a sala comporta quatro jogadores). O criador escolhe o cenário e o modo — **Todos contra todos** (primeiro a 5 eliminações) ou **2 contra 2** (primeiro time a 8; sem dano entre aliados; os times são azul e dourado e cada jogador pode pedir para trocar) — e inicia quando houver pelo menos dois jogadores.
 
-WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Botão direito do mouse ou Ctrl: parry, com recarga zerada ao bloquear. Shift: passo de esquiva na direção em que você anda (para a frente se estiver parado), com um instante de invulnerabilidade e 1 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
+WASD: mover. Mouse: mirar. Clique ou 1: ataque. 2 e 3: habilidades. Espaço: pular. Botão direito do mouse ou Ctrl: parry (segure para bloquear, aperte na hora do golpe para defletir). Shift: passo de esquiva na direção em que você anda (para a frente se estiver parado), com um instante de invulnerabilidade e 1 s de recarga, para todas as classes. V: alternar câmera sobre o ombro (padrão) e primeira pessoa. Esc: soltar o mouse. Se a captura do mouse não estiver disponível, arraste sobre a arena; as setas esquerda/direita também giram a câmera. Há controles de toque para celular.
 
 ## Personagens e assets
 
@@ -26,30 +26,33 @@ Como os modelos foram feitos: conceito em imagem (pose A, punhos fechados) → m
 
 Quarta classe: **Elfa** (lanceira; estocada de alcance longo, salto lunar e flecha de luz), com um único modelo.
 
+Quinta e sexta classes: **Arqueiro** (masculino e feminino; flecha rápida, rajada tripla em leque e tiro que atravessa quem estiver na linha; arco na mão esquerda, aljava nas costas e uma faca para o corpo a corpo) e **Druida** (um modelo; espinho que atrasa, raízes que prendem o rival na área e uma flor que cura a druida e os aliados próximos). O clipe de tiro com arco (`Bow`) foi comprado no esqueleto do arqueiro e levado aos outros como os demais.
+
 Imagem e sensação de jogo: `public/fx/post.js` desenha a cena em HDR com bloom, vinheta e um leve desvio de cor nos impactos (botão **Efeitos** no topo; desliga sozinho se a máquina não segurar 30 quadros por segundo). `public/fx/audio.js` sintetiza todos os sons no navegador (golpes, magias, passos e um ambiente por arena), sem arquivos de áudio. Golpes têm rastro luminoso na arma, tremor de câmera, uma pausa curta no acerto, números de dano e barra de vida sobre os rivais. **Q** (ou Tab, ou o botão do meio do mouse) trava a mira no rival mais próximo, como num duelo.
 
 ## Combate de duelo
 
-Duelo com guarda direcional e postura, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
+Duelo de postura, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
 
-- **Guarda** em três direções (esquerda, cima, direita). Com a mira travada (**Q**), mover o mouse escolhe a direção; sem trava, use as setas ← ↑ →. O anel na base da tela mostra a sua guarda; o anel em volta do rival mostra a dele, já espelhado.
-- **Golpe leve** (clique, ou F) e **golpe pesado** (G) saem do lado da guarda. Não custam nada e emendam um no outro: apertar de novo durante a recuperação já solta o próximo.
-- **Bloqueio** é automático quando a sua guarda está no lado de onde o golpe vem (o lado acende em vermelho no anel do rival). Bloquear enche a sua **postura**.
-- **Deflexão**: levar a guarda para o lado certo no último instante (ou apertar o botão direito, ou Ctrl) desvia o golpe com faíscas, não custa nada a você e enche a postura de quem atacou.
+- **Golpe leve** (clique, ou F) e **golpe pesado** (G) não custam nada e emendam um no outro: apertar de novo durante a recuperação já solta o próximo. A direção da guarda (mouse com a mira travada em **Q**, ou setas ← ↑ →) só escolhe de que lado o golpe sai.
+- **Parry** (botão direito ou Ctrl) está sempre disponível, sem recarga, e funciona assim:
+  - **segurar** bloqueia os golpes que vêm de frente: você não perde vida, mas a sua **postura** enche;
+  - **apertar na hora** em que o golpe chega (janela de 0,2 s) é uma **deflexão**: a sua postura **diminui**, a do rival **aumenta** e ele fica aberto por um instante. Vale também contra habilidades;
+  - **apertar e não defletir nada** é um erro e enche a sua própria postura. Errar várias vezes seguidas quebra a sua postura sozinho.
 - **Postura** é a barra laranja. Quando enche, a guarda desaba e o lutador fica aberto; o próximo golpe que entrar é um **golpe fatal**, com dano triplo. Ela esvazia sozinha depois de um segundo sem pressão.
 - **Quebra de guarda** (E) castiga quem só defende, mas ricocheteia em quem já está atacando. **Shift** é um passo rápido de esquiva (2,8 m, 1 s de recarga) que também cancela a recuperação de um golpe.
-- As habilidades 1, 2 e 3 de cada classe continuam, como especiais com recarga, e não são bloqueadas pela guarda (só por parry ou esquiva).
-- No treino, o **Rival** se aproxima, ataca em sequências curtas e às vezes lê o seu golpe; o **Alvo** só defende.
+- As habilidades 1, 2 e 3 de cada classe são especiais com recarga e não são paradas pelo bloqueio segurado, só pela deflexão ou pela esquiva.
+- No treino, o **Rival** se aproxima, ataca em sequências curtas e às vezes bloqueia ou deflete o seu golpe; o **Alvo** só defende.
 
 Cenários: `public/world.js` monta as quatro arenas em código — céu em shader (estrelas, lua, nuvens, aurora, brasas), piso pintado com círculo rúnico luminoso, fundo próprio (catedral em ruínas, vulcão com rios de lava, floresta com lanternas, cidadela de gelo), partículas e névoa. As peças paradas são fundidas em uma malha por material para manter poucas chamadas de desenho.
 
 O Assassino arremessa com a mão vazia (as adagas ficam embainhadas nas coxas e uma só é sacada na estocada); a adaga voa girando.
 
-Mago: fogo 28, gelo 20 e raio 46. Cavaleiro: espada, investida e abalo. Assassino: adaga, esquiva e golpe pelas costas. Primeiro a cinco eliminações, limite de três minutos. O treino usa alvos imóveis que renascem.
+Mago: fogo 23, gelo 17 e raio 38. Cavaleiro: espada 26, investida 25 e abalo 39 (os dois foram enfraquecidos em cerca de 20%). Assassino: adaga, esquiva e golpe pelas costas. Limite de três minutos por partida. A área de jogo tem 30 × 25 m (era 23 × 19 m); o cenário inteiro é esticado junto em `public/world.js`.
 
 ## Servidor
 
-No ar em https://arena-elemental-25d.onrender.com (Render, plano gratuito: dorme sem uso e leva cerca de um minuto para acordar; a publicação é manual, pelo botão Manual Deploy do painel). `node scripts/test-online.mjs https://arena-elemental-25d.onrender.com` abre uma sala com dois clientes de verdade e confere início, movimento e dash.
+No ar em https://arena-elemental-25d.onrender.com (Render, plano gratuito: dorme sem uso e leva cerca de um minuto para acordar; a publicação é manual, pelo botão Manual Deploy do painel). `node scripts/test-online.mjs https://arena-elemental-25d.onrender.com` abre uma sala com clientes de verdade e confere a lotação (quatro entram, o quinto é recusado), o modo 2v2, a troca de time, início, movimento e dash.
 
 Publicar no Render (plano gratuito, usa o `render.yaml` deste repositório): [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Hikkz-bit/arena-elemental-25d). O jogo e o servidor de salas sobem no mesmo endereço; basta enviar o link da sala aos amigos.
 

@@ -37,6 +37,24 @@ export function createWeapon(kind='sword'){
   tube(root,leather,.024,.028,2,0,.3,0);for(const y of [-.55,-.1,.35,1.22])band(root,gold,.034,y,.04);
   shape(root,[[0,1.92],[.095,1.56],[.05,1.3],[-.05,1.3],[-.095,1.56]],.03,steel);shape(root,[[0,1.9],[.095,1.56],[.05,1.32],[.02,1.56]],.034,edge);
   for(const side of [-1,1])shape(root,[[side*.03,1.3],[side*.13,1.22],[side*.05,1.16]],.03,gold);jewel(root,gem,0,1.26,-.03,.04);mesh(root,new T.ConeGeometry(.03,.16,6),steel,0,-.78,0).rotation.x=Math.PI;
+ }else if(kind==='bow'){
+  // Recurve bow along Y with the grip at the origin; the string is on +X, the archer's side.
+  const wood=mat(0x6a4526),pale=mat(0xe9e2c8),curve=new T.CatmullRomCurve3([[.2,-.74],[.07,-.56],[-.03,-.28],[0,0],[-.03,.28],[.07,.56],[.2,.74]].map(([x,y])=>new T.Vector3(x,y,0)));
+  mesh(root,new T.TubeGeometry(curve,28,.021,6),wood);tube(root,leather,.028,.028,.16);for(const y of [-.1,.1])band(root,gold,.031,y,.03);
+  for(const s of [-1,1]){const tip=mesh(root,new T.ConeGeometry(.028,.09,5),gold,.21,s*.77,0);tip.rotation.z=s>0?-.6:Math.PI+.6;}
+  tube(root,pale,.004,.004,1.48,.2,0,0,4);
+ }else if(kind==='quiver'){
+  const shaft=mat(0xcdb98a),red=mat(0xd94a3a),white=mat(0xf0ead6);tube(root,leather,.062,.05,.5,0,.05,0,10);band(root,gold,.066,.27,.04);band(root,gold,.056,-.12,.03);
+  for(let i=0;i<5;i++){const a=i*1.26,x=Math.cos(a)*.028,z=Math.sin(a)*.028;tube(root,shaft,.006,.006,.26,x,.4,z,4);const f=shape(root,[[0,0],[.03,.02],[.03,.1],[0,.08]],.004,i%2?red:white,x,.42,z);f.rotation.y=a;}
+ }else if(kind==='arrow'){
+  // Points along +Y.
+  const white=mat(0xf0ead6);tube(root,mat(0xcdb98a),.008,.008,.7,0,0,0,5);mesh(root,new T.ConeGeometry(.026,.1,5),steel,0,.4,0);for(let i=0;i<3;i++){const f=shape(root,[[0,0],[.035,-.03],[.035,-.13],[0,-.1]],.004,white,0,-.22,0);f.rotation.y=i*2.094;}
+ }else if(kind==='druidstaff'){
+  const wood=mat(0x5d4026),bark=mat(0x8a6a3a),leaf=mat(0x4f9a52),bloom=glow(0x7dffa0);
+  tube(root,wood,.026,.038,1.5,0,.2,0,7);for(const y of [-.3,.25,.7])band(root,bark,.042,y,.03);
+  const crook=mesh(root,new T.TorusGeometry(.14,.028,6,18,Math.PI*1.55),wood,0,1.07,0);crook.rotation.z=-.4;mesh(root,new T.IcosahedronGeometry(.075,1),bloom,0,1.07,0);
+  for(let i=0;i<5;i++){const a=i*1.26,l=shape(root,[[0,0],[.045,.06],[0,.16],[-.045,.06]],.008,leaf,Math.cos(a)*.09,.9+i*.03,Math.sin(a)*.09);l.rotation.set(.5,a,0);}
+  jewel(root,bloom,0,-.55,0,.045);
  }else if(kind==='shield'){
   shape(root,[[-.25,.28],[0,.35],[.25,.28],[.23,-.1],[0,-.36],[-.23,-.1]],.08,gold);
   shape(root,[[-.21,.25],[0,.3],[.21,.25],[.19,-.08],[0,-.3],[-.19,-.08]],.085,dark);
@@ -46,14 +64,14 @@ export function createWeapon(kind='sword'){
 }
 
 // First-person arms. Each hand is its own group so it can swing on its own; weapons stay separate children so they can be hidden.
-const VIEW_COLORS={knight:{male:[0x23262e,0x8f1f2a],female:[0xc9d2dc,0xd9b25f]},mage:{male:[0xf1f0ea,0x6fb6ff],female:[0x6a2c8f,0xe0b25c]},rogue:{male:[0xe8e2d2,0x2a8f86],female:[0x1f2226,0x2e7a5f]},elf:{male:[0x1b1b20,0xd9a441],female:[0x1b1b20,0xd9a441]}};
+const VIEW_COLORS={knight:{male:[0x23262e,0x8f1f2a],female:[0xc9d2dc,0xd9b25f]},mage:{male:[0xf1f0ea,0x6fb6ff],female:[0x6a2c8f,0xe0b25c]},rogue:{male:[0xe8e2d2,0x2a8f86],female:[0x1f2226,0x2e7a5f]},elf:{male:[0x1b1b20,0xd9a441],female:[0x1b1b20,0xd9a441]},archer:{male:[0x3f5a2e,0x8a5a2e],female:[0x7a4a2a,0xd0a94a]},druid:{male:[0xb9785a,0xd9a441],female:[0xb9785a,0xd9a441]}};
 export function createViewWeapon(classId,bodyType){
  const root=new T.Group();root.name='view_'+classId;const [sleeveColor,trimColor]=(VIEW_COLORS[classId]||VIEW_COLORS.mage)[bodyType==='female'?'female':'male'],sleeve=mat(sleeveColor),trim=mat(trimColor,.4,.5),hands={};
  for(const side of [-1,1]){
   const hand=node(root,'view_hand_'+side,side*.4,-.24,-.72);oval(hand,sleeve,0,-.025,.04,.065,.09,.13);band(hand,trim,.067,-.03);
   const arm=tube(hand,sleeve,.058,.085,.7,0,-.27,.335,10);arm.rotation.x=Math.PI/2-.75;const cuff=tube(hand,trim,.068,.068,.05,0,-.07,.12,10);cuff.rotation.x=Math.PI/2-.75;
-  const kind=classId==='knight'?(side<0?'shield':'sword'):classId==='mage'?(side>0?'staff':null):classId==='elf'?(side>0?'spear':null):(side>0?'dagger':null);let weapon=null;
-  if(kind){weapon=createWeapon(kind);weapon.scale.setScalar(kind==='staff'?.72:kind==='sword'?.7:kind==='spear'?.6:.8);weapon.position.set(0,0,-.08);weapon.rotation.z=side*(kind==='dagger'?-.3:-.12);hand.add(weapon);}
+  const kind=classId==='knight'?(side<0?'shield':'sword'):classId==='mage'?(side>0?'staff':null):classId==='elf'?(side>0?'spear':null):classId==='archer'?(side<0?'bow':null):classId==='druid'?(side>0?'druidstaff':null):(side>0?'dagger':null);let weapon=null;
+  if(kind){weapon=createWeapon(kind);weapon.scale.setScalar(kind==='staff'||kind==='druidstaff'?.72:kind==='sword'?.7:kind==='spear'?.6:kind==='bow'?.62:.8);weapon.position.set(0,kind==='bow'?.12:0,-.08);weapon.rotation.z=side*(kind==='dagger'?-.3:-.12);if(kind==='bow')weapon.rotation.set(0,-Math.PI/2,.1);hand.add(weapon);}
   else if(classId==='mage')jewel(hand,glow(0x97a9ff),0,.09,-.06,.05);
   hands[side]={hand,weapon,rest:hand.position.clone(),offset:new T.Vector3(),turn:new T.Vector3()};
  }
@@ -77,6 +95,13 @@ const SWINGS={
  elf0:{R:[[.05,.05,.2,-.5,0,0],[-.18,.1,-.45,-1.25,0,.1]],L:[[0,0,0,0,0,0],[.1,.05,-.1,0,.2,0]]},
  elf1:{R:[[.05,.1,.2,-.6,0,0],[-.2,.12,-.5,-1.3,0,.1]],L:[[0,0,0,0,0,0],[.12,.1,-.15,0,.3,0]]},
  elf2:{R:[[0,.05,.1,.1,0,0],[-.05,.2,-.1,.3,0,0]],L:[[0,0,.1,0,0,0],[.2,.15,-.35,-.3,0,0]]},
+ // The bow hand pushes forward and up while the other draws back to the cheek, then lets go.
+ archer0:{R:[[-.12,.14,.2,0,0,0],[-.05,.14,.3,0,0,.3]],L:[[.16,.2,-.2,0,0,0],[.18,.22,-.3,0,0,0]]},
+ archer1:{R:[[-.12,.14,.22,0,0,0],[-.05,.14,.32,0,0,.3]],L:[[.16,.2,-.22,0,0,.15],[.18,.22,-.32,0,0,.15]]},
+ archer2:{R:[[-.14,.16,.26,0,0,0],[-.05,.16,.36,0,0,.35]],L:[[.18,.22,-.26,0,0,0],[.2,.24,-.36,0,0,0]]},
+ druid0:{R:[[.2,.1,0,0,0,-.5],[-.3,.05,-.25,-.2,0,.6]],L:[[0,0,0,0,0,0],[.1,.05,-.15,0,0,0]]},
+ druid1:{R:[[.05,0,.15,.2,0,0],[-.1,.1,-.35,-.5,0,0]],L:[[0,0,.1,0,0,0],[.15,.12,-.3,-.3,0,0]]},
+ druid2:{R:[[0,.1,.05,.2,0,0],[0,.3,-.05,.6,0,0]],L:[[0,.05,0,0,0,0],[.08,.3,-.1,.5,0,0]]},
  // Duel swings from the left, from above and from the right, and the guard-break shove.
  duel0:{R:[[-.45,.15,.1,.2,0,.9],[.2,-.05,-.3,-.5,0,-.8]],L:[[0,0,0,0,0,0],[.05,-.03,.06,0,0,0]]},
  duel1:{R:[[0,.35,.1,1.1,0,0],[-.1,-.2,-.3,-1.3,0,0]],L:[[0,.05,0,0,0,0],[.06,-.06,.05,0,0,0]]},

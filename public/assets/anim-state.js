@@ -11,7 +11,7 @@ export const ACTIONS={
  Idle:{clip:'Idle'},
  Run:{clip:'Run'},
  Jump:{clip:'Jump',time:.7,once:true},
- Parry:{clip:'Parry',from:.3,to:1.5},
+ Parry:{clip:'Parry'}, // a held guard: the whole clip is a loop, and it is held for as long as the button is
  Roll:{clip:'Roll',from:.55,to:.85,time:.2,once:true},
  Dash:{clip:'Run',time:.36},
  Death:{clip:'Death',time:1.7,once:true},
@@ -38,9 +38,16 @@ export const ACTIONS={
  rogue2:{clip:'Thrust',from:1.35,to:2.2,time:.45,once:true},
  elf0:{clip:'Thrust',from:1.35,to:2.2,time:.45,once:true},
  elf1:{clip:'Thrust',from:1.3,to:2.2,time:.5,once:true,full:true},
- elf2:{clip:'CastPush',from:.7,to:1.9,time:.6,once:true}
+ elf2:{clip:'CastPush',from:.7,to:1.9,time:.6,once:true},
+ // The bow clip raises the bow at 2.1 s, is fully drawn at 2.8 s and lets go at 3.25 s.
+ archer0:{clip:'Bow',from:2.6,to:3.6,time:.42,once:true},
+ archer1:{clip:'Bow',from:2.45,to:3.7,time:.5,once:true},
+ archer2:{clip:'Bow',from:2.1,to:3.9,time:.8,once:true},
+ druid0:{clip:'CastFling',from:.6,to:1.6,time:.55,once:true},
+ druid1:{clip:'CastPush',from:.7,to:1.9,time:.6,once:true},
+ druid2:{clip:'CastSky',from:.4,to:1.7,time:.8,once:true}
 };
-export const CLIP_NAMES=['Idle','Run','Jump','Slash','Thrust','Slam','CastPush','CastFling','CastSky','Roll','Parry','Death','LeftSlash','Overhead','WideSlash','Hammer','Block','Bash','Kick','Stagger','GuardWalk'];
+export const CLIP_NAMES=['Idle','Run','Jump','Slash','Thrust','Slam','CastPush','CastFling','CastSky','Roll','Parry','Death','LeftSlash','Overhead','WideSlash','Hammer','Block','Bash','Kick','Stagger','GuardWalk','Bow'];
 
 // The attack action for an ability slot, or null when that slot has no swing of its own (the rogue's shadow step).
 export const attackOf=(classId,element)=>Object.hasOwn(ACTIONS,classId+element)?classId+element:null;
@@ -60,7 +67,7 @@ export function pickLayers(p,attack){
  const air=p.y>.1,base=air?'Jump':p.moving?(p.guardMode?'Walk':'Run'):'Idle';
  if(p.guard>0)return {upper:'Block',lower:base};
  if(attack)return {upper:attack,lower:ACTIONS[attack].full||(!p.moving&&!air)?attack:base};
- if(p.parry>0||p.parryFlash>0)return {upper:'Parry',lower:base};
+ if(p.parry>0||p.parryFlash>0||p.blocking)return {upper:'Parry',lower:base}; // the guard is held for as long as the button is
  return {upper:base,lower:base};
 }
 

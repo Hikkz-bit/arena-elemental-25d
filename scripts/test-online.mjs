@@ -18,11 +18,17 @@ const a=client(),b=client(),c=client(),d=client(),e=client();await Promise.all([
 const created=await a.call('create',{name:'Ana',token:randomUUID(),classId:'knight',bodyType:'female',mapId:'forest'}),code=created.room.code,idA=created.id;
 const joined=await b.call('join',{name:'Bruno',token:randomUUID(),classId:'mage',bodyType:'male',code}),idB=joined.id;
 assert.equal(joined.room.players.length,2);assert.deepEqual(joined.room.players.map(p=>p.classId),['knight','mage']);
-await c.call('join',{name:'Caio',token:randomUUID(),classId:'rogue',bodyType:'male',code});
-const full=await d.call('join',{name:'Dani',token:randomUUID(),classId:'elf',bodyType:'female',code});
+const idC=(await c.call('join',{name:'Caio',token:randomUUID(),classId:'archer',bodyType:'male',code})).id;
+const full=await d.call('join',{name:'Dani',token:randomUUID(),classId:'druid',bodyType:'female',code});
 assert.equal(full.room.players.length,4,'a sala comporta quatro jogadores');assert.deepEqual(full.room.players.map(p=>p.slot).sort(),[0,1,2,3],'cada jogador tem a sua vaga');
 assert.equal(new Set(full.room.players.map(p=>p.x+','+p.z)).size,4,'cada jogador nasce em um canto');
 await assert.rejects(e.call('join',{name:'Eva',token:randomUUID(),classId:'mage',bodyType:'female',code}),/4 jogadores/,'o quinto jogador é recusado');e.ws.close();
+// 2v2: only the creator picks the mode; with both teams full, two players trade places once each of them has asked.
+await assert.rejects(b.call('configure',{mode:'teams'}),/criador/,'só o criador escolhe o modo');
+assert.equal((await a.call('configure',{mode:'teams'})).room.mode,'teams');
+assert.equal((await c.call('configure',{swapTeam:true})).room.players.find(p=>p.id===idC).wantsSwap,true,'com o outro time cheio o pedido fica esperando');
+{const traded=await b.call('configure',{swapTeam:true}),slot=id=>traded.room.players.find(p=>p.id===id).slot;assert.deepEqual([slot(idB),slot(idC)],[2,1],'dois pedidos trocam os jogadores de time');}
+assert.equal((await a.call('configure',{mode:'ffa'})).room.mode,'ffa');
 await a.call('start');
 for(let i=0;i<80&&a.room.phase!=='playing';i++)await wait(100);assert.equal(a.room.phase,'playing','a partida começa depois da contagem');
 const me=(c,id)=>c.room.players.find(p=>p.id===id),start={...me(a,idA)},toB=Math.atan2(me(a,idB).x-start.x,-(me(a,idB).z-start.z));
@@ -35,4 +41,4 @@ const end=me(b,idA);assert(Math.hypot(end.x-start.x,end.z-start.z)>3,'Bruno vê 
 assert(a.room.events.some(e=>e.type==='cast'&&e.owner===idB)||me(a,idB).cd[0]>=0,'a habilidade do Bruno chega para a Ana');
 assert.equal(me(a,idB).connected,true);assert(!JSON.stringify(a.room).includes('"hash"'));
 for(const x of [a,b,c,d]){await x.call('leave');x.ws.close();}
-console.log('PASS online: sala '+code+', quatro jogadores e o quinto recusado, início, movimento visto pelos outros, dash com recarga em '+origin);
+console.log('PASS online: sala '+code+', quatro jogadores e o quinto recusado, modo 2v2 e troca de time, início, movimento visto pelos outros, dash com recarga em '+origin);

@@ -1,9 +1,10 @@
 import * as T from './vendor/three.js';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {PILLARS} from './physics.js';
+import {PILLARS,BOUNDS} from './physics.js';
 export {T};
 
-// Four arenas built in code. The playable space never changes (24 x 20 m floor, four pillars, low walls);
+// Four arenas built in code. They are laid out for a 23 x 19 m play area and stretched on the ground plane (K) to the
+// current bounds; the pillars are placed so that they land exactly on the physics positions. The playable space is the same in all four;
 // everything else is scenery: a shader sky, painted floor, backdrop, lights, particles and drifting mist.
 const THEMES={
  abbey:{top:0x070d1f,horizon:0x2a3c5c,below:0x0b1220,glow:0x6f86b8,fog:0x1c2c40,density:.022,stars:1,moon:[-.45,.5,-.74],moonColor:0xe9efd8,cloud:.5,cloudColor:0x33455f,aurora:0,ember:0,
@@ -76,7 +77,7 @@ let glowShared=null;
 function glowTexture(){return glowShared??=canvasTexture(64,64,(c)=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.2,'rgba(255,255,255,.75)');g.addColorStop(.5,'rgba(255,255,255,.22)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,64,64);});}
 
 export function buildWorld(scene,id){
- const p=THEMES[id]||THEMES.abbey,rand=mulberry(Object.keys(THEMES).indexOf(id)*977+11),group=new T.Group(),animated=[],batches=new Map();scene.add(group);
+ const p=THEMES[id]||THEMES.abbey,rand=mulberry(Object.keys(THEMES).indexOf(id)*977+11),group=new T.Group(),animated=[],batches=new Map(),K=BOUNDS.x/11.5;group.scale.set(K,1,K);scene.add(group);
  scene.background=new T.Color(p.horizon);scene.fog=new T.FogExp2(p.fog,p.density);
  const stoneMap=stoneTexture(rand),mat=(color,extra={})=>new T.MeshStandardMaterial({color,roughness:.9,...extra});
  const M={stone:mat(p.stone,{map:stoneMap}),trim:mat(p.trim,{map:stoneMap}),dark:mat(p.dark,{map:stoneMap}),rock:mat(p.dark,{flatShading:true}),wood:mat(0x4a3d32),iron:mat(0x2a2f36,{metalness:.6,roughness:.5}),
@@ -99,7 +100,7 @@ export function buildWorld(scene,id){
  // Sky, lights, floor.
  const sky=new T.Mesh(new T.SphereGeometry(95,32,20),new T.ShaderMaterial({vertexShader:SKY_VERTEX,fragmentShader:SKY_FRAGMENT,side:T.BackSide,depthWrite:false,fog:false,uniforms:{uTime:{value:0},uTop:{value:new T.Color(p.top)},uHorizon:{value:new T.Color(p.horizon)},uBelow:{value:new T.Color(p.below)},uGlow:{value:new T.Color(p.glow)},uMoonColor:{value:new T.Color(p.moonColor)},uCloudColor:{value:new T.Color(p.cloudColor)},uMoonDir:{value:new T.Vector3(...(p.moon||[0,-1,0])).normalize()},uStars:{value:p.stars},uMoon:{value:p.moon?1:0},uCloud:{value:p.cloud},uAurora:{value:p.aurora},uEmber:{value:p.ember}}}));sky.renderOrder=-10;sky.frustumCulled=false;live(sky);
  group.add(new T.HemisphereLight(p.hemi[0],p.hemi[1],p.hemi[2]));
- const sun=new T.DirectionalLight(p.sun[0],p.sun[1]);sun.position.set(...p.sun[2]);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-16,right:16,top:14,bottom:-14,near:1,far:50});sun.shadow.bias=-.0012;sun.shadow.normalBias=.03;group.add(sun);
+ const sun=new T.DirectionalLight(p.sun[0],p.sun[1]);sun.position.set(...p.sun[2]);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-16*K,right:16*K,top:14*K,bottom:-14*K,near:1,far:60});sun.shadow.bias=-.0012;sun.shadow.normalBias=.03;group.add(sun);
  const rim=new T.DirectionalLight(p.rim,.75);rim.position.set(-p.sun[2][0],6,-p.sun[2][2]);group.add(rim);
  const floorMaps=floorTextures(id,p,rand),floorMaterial=mat(0xffffff,{map:floorMaps.map,emissiveMap:floorMaps.glow,emissive:p.accent,emissiveIntensity:1.1,roughness:id==='glacier'?.5:.92,metalness:id==='glacier'?.15:0});
  const floor=live(new T.Mesh(new T.PlaneGeometry(24.6,20.6),floorMaterial));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;animated.push(t=>{floorMaterial.emissiveIntensity=1+Math.sin(t*1.4)*.3;});
@@ -113,7 +114,7 @@ export function buildWorld(scene,id){
  for(const x of [-12.3,12.3])for(const z of [-10.3,10.3]){column(x,z,3.3,1.15,M.stone,0,10,.92);put(cylinderGeometry(1.3,1.3,.22,10),M.trim,x,3.4,z);for(let i=0;i<6;i++){const a=i*Math.PI/3;box(x+Math.sin(a)*1.05,3.75,z+Math.cos(a)*1.05,.5,.5,.4,M.stone,a);}cone(x,5,z,1,2.2,8,M.dark);}
 
  // Pillars.
- for(const [x,z] of PILLARS){
+ for(const [x,z] of PILLARS.map(([x,z])=>[x/K,z/K])){
   const tree=id==='forest',shaft=tree?M.wood:id==='glacier'?M.trim:M.stone,h=tree?6:4.6;
   box(x,.15,z,1.7,.3,1.7,M.trim);put(cylinderGeometry(.74,.8,.26,12),M.dark,x,.43,z);column(x,z,h-.9,.62,shaft,.56,12,.88);put(cylinderGeometry(.8,.62,.28,12),M.dark,x,h-.2,z);box(x,h+.08,z,1.62,.3,1.62,M.trim);
   if(tree){for(let j=0;j<5;j++)put(new T.IcosahedronGeometry(2+rand()*.9,0),[M.leafA,M.leafB,M.leafC][j%3],x+Math.sin(j*2.1)*1.3,6.6+j*.45,z+Math.cos(j*2.1)*1.1,rand()*3,rand()*3,0);for(let j=0;j<5;j++){const a=j*1.26;cone(x+Math.sin(a)*.7,.45,z+Math.cos(a)*.7,.3,1.1,5,M.wood,Math.cos(a)*.7,0,-Math.sin(a)*.7);}}

@@ -19,3 +19,5 @@
 #lockon i.danger{transform:scale(1.18);filter:drop-shadow(0 0 8px #ff3b2f)}#lockon i.danger.heavy{transform:scale(1.34);border-width:10px}
 #lockon.open{border-color:#ff7a5c;box-shadow:0 0 18px #ff7a5c}#lockon.grab{border-color:#ffb45c;border-style:dashed}
 .duel{position:absolute;right:0;bottom:64px;display:grid;grid-template-columns:1fr 1fr;gap:6px;pointer-events:auto}.duel button{padding:12px 10px;font-size:12px}
+
+.mode{display:flex;gap:8px;align-items:flex-end;margin-top:10px}.mode>div{flex:1}.mode button{white-space:nowrap}

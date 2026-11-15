@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createWeapon,disposeModel} from '../public/assets/models.js';
 import {ACTIONS,CLIP_NAMES,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from '../public/assets/anim-state.js';
+import {CLASSES,bodyOf} from '../public/catalog.js';
 import * as T from '../public/vendor/three.js';
 import {createPoseLayer,beginPose,endPose} from '../public/assets/pose-layer.js';
 
@@ -38,8 +39,9 @@ assert.deepEqual(pickLayers({...alive,stun:.4,attack:{kind:'light',dir:1}},null)
 assert.deepEqual(pickLayers({...alive,stun:1,broken:1},null),{upper:'Broken',lower:'Broken'},'a collapsed guard holds the bent pose');
 assert.deepEqual(pickLayers({...alive,guard:.2,moving:true,guardMode:true},null),{upper:'Block',lower:'Walk'},'blocking while walking in guard');
 assert.deepEqual(pickLayers({...alive,moving:true,guardMode:true},null),{upper:'Walk',lower:'Walk'});
+assert.deepEqual(pickLayers({...alive,blocking:true},null),{upper:'Parry',lower:'Idle'},'a held guard keeps the guard pose');
 for(const kind of ['light','heavy'])for(const dir of [0,1,2])assert(ACTIONS[kind+dir].once,kind+dir);
-for(const classId of ['knight','mage','rogue','elf'])for(let i=0;i<3;i++){const id=attackOf(classId,i);if(classId==='rogue'&&i===1)assert.equal(id,null);else assert(ACTIONS[id].once&&ACTIONS[id].time>0,id);}
+for(const classId of Object.keys(CLASSES))for(let i=0;i<3;i++){const id=attackOf(classId,i);if(classId==='rogue'&&i===1)assert.equal(id,null);else assert(ACTIONS[id].once&&ACTIONS[id].time>0,id);}
 assert.equal(attackOf('mage',7),null);assert.equal(attackOf('toString',''),null);
 for(const a of Object.values(ACTIONS)){assert(CLIP_NAMES.includes(a.clip));if(a.from!==undefined)assert(a.to>a.from);}
 assert.deepEqual(legTwist(0,0),{angle:0,backwards:false});assert.deepEqual(legTwist(1,0),{angle:0,backwards:false});
@@ -48,8 +50,8 @@ assert(legTwist(-1,0).backwards&&Math.abs(legTwist(-1,0).angle)<1e-9,'straight b
 assert(legTwist(-1,1).backwards&&legTwist(-1,1).angle<0,'back-right pedals backwards with the legs turned left');
 
 // Shipped character files: skinned, 24 joints, every clip present and well formed.
-const manifest=JSON.parse(fs.readFileSync('public/assets/manifest.json','utf8'));assert.equal(manifest.characters.length,7);
-for(const classId of ['mage','knight','rogue','elf'])for(const bodyType of classId==='elf'?['female']:['male','female']){
+const manifest=JSON.parse(fs.readFileSync('public/assets/manifest.json','utf8'));assert.equal(manifest.characters.length,10);
+for(const classId of Object.keys(CLASSES))for(const bodyType of CLASSES[classId].body?[bodyOf(classId)]:['male','female']){
  const name=classId+'-'+bodyType,file=fs.readFileSync('public/assets/glb/'+name+'.glb');assert.equal(file.readUInt32LE(0),0x46546c67);assert.equal(file.readUInt32LE(8),file.length);assert(file.length<3.2e6,name+' stays under 3.2 MB');
  const n=file.readUInt32LE(12),gltf=JSON.parse(file.subarray(20,20+n).toString()),bin=file.subarray(28+n),skin=gltf.skins[0],prim=gltf.meshes[0].primitives[0];
  assert.equal(skin.joints.length,24);for(const bone of LOWER_BONES.concat(['Spine02','Spine','Head','LeftHand','RightHand','LeftForeArm']))assert(skin.joints.some(j=>gltf.nodes[j].name===bone),name+' has bone '+bone);
@@ -68,4 +70,4 @@ for(const classId of ['mage','knight','rogue','elf'])for(const bodyType of class
  assert.equal(manifest.characters.find(c=>c.classId===classId&&c.bodyType===bodyType).bytes,file.length);
 }
 for(const kind of ['sword','dagger','staff','shield','spear']){const w=createWeapon(kind);assert(w.children.length>2);disposeModel(w);}
-console.log('PASS: animation layers and leg twist rules, seven skinned characters with 24 joints and 21 clips each, every clip but the fall stays in place, unit rotations, four weapons');
+console.log('PASS: animation layers and leg twist rules, ten skinned characters with 24 joints and 22 clips each, every clip but the fall stays in place, unit rotations, four weapons');

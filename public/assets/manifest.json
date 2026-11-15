@@ -7,7 +7,7 @@
       "classId": "knight",
       "bodyType": "male",
       "file": "knight-male.glb",
-      "bytes": 1893884,
+      "bytes": 1955156,
       "triangles": 28352,
       "bones": 24,
       "animations": [
@@ -31,14 +31,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "knight",
       "bodyType": "female",
       "file": "knight-female.glb",
-      "bytes": 2000528,
+      "bytes": 2061800,
       "triangles": 28432,
       "bones": 24,
       "animations": [
@@ -62,14 +63,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "mage",
       "bodyType": "male",
       "file": "mage-male.glb",
-      "bytes": 1948596,
+      "bytes": 2009864,
       "triangles": 29001,
       "bones": 24,
       "animations": [
@@ -93,14 +95,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "mage",
       "bodyType": "female",
       "file": "mage-female.glb",
-      "bytes": 2017752,
+      "bytes": 2079024,
       "triangles": 29994,
       "bones": 24,
       "animations": [
@@ -124,14 +127,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "rogue",
       "bodyType": "male",
       "file": "rogue-male.glb",
-      "bytes": 1942804,
+      "bytes": 2004072,
       "triangles": 29488,
       "bones": 24,
       "animations": [
@@ -155,14 +159,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "rogue",
       "bodyType": "female",
       "file": "rogue-female.glb",
-      "bytes": 1920960,
+      "bytes": 1982232,
       "triangles": 29558,
       "bones": 24,
       "animations": [
@@ -186,14 +191,15 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
       ]
     },
     {
       "classId": "elf",
       "bodyType": "female",
       "file": "elf-female.glb",
-      "bytes": 1958184,
+      "bytes": 2019456,
       "triangles": 28584,
       "bones": 24,
       "animations": [
@@ -217,7 +223,104 @@
         "Bash",
         "Kick",
         "Stagger",
-        "GuardWalk"
+        "GuardWalk",
+        "Bow"
+      ]
+    },
+    {
+      "classId": "archer",
+      "bodyType": "male",
+      "file": "archer-male.glb",
+      "bytes": 1905480,
+      "triangles": 28902,
+      "bones": 24,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Slash",
+        "Thrust",
+        "Slam",
+        "CastPush",
+        "CastFling",
+        "CastSky",
+        "Roll",
+        "Parry",
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk",
+        "Bow"
+      ]
+    },
+    {
+      "classId": "archer",
+      "bodyType": "female",
+      "file": "archer-female.glb",
+      "bytes": 2066776,
+      "triangles": 28944,
+      "bones": 24,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Slash",
+        "Thrust",
+        "Slam",
+        "CastPush",
+        "CastFling",
+        "CastSky",
+        "Roll",
+        "Parry",
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk",
+        "Bow"
+      ]
+    },
+    {
+      "classId": "druid",
+      "bodyType": "female",
+      "file": "druid-female.glb",
+      "bytes": 2082880,
+      "triangles": 28690,
+      "bones": 24,
+      "animations": [
+        "Idle",
+        "Run",
+        "Jump",
+        "Slash",
+        "Thrust",
+        "Slam",
+        "CastPush",
+        "CastFling",
+        "CastSky",
+        "Roll",
+        "Parry",
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk",
+        "Bow"
       ]
     }
   ],

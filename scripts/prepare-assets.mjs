@@ -10,7 +10,7 @@ import {execFileSync} from 'node:child_process';
 import * as T from '../public/vendor/three.js';
 
 const RAW=process.argv[2]||'.local/rig',OUT='public/assets/glb',SOURCE='knight-male',FPS=30,TEXTURE=1536;
-const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female','elf-female'];
+const CHARACTERS=['knight-male','knight-female','mage-male','mage-female','rogue-male','rogue-female','elf-female','archer-male','archer-female','druid-female'];
 // root: which parts of the hips translation survive. 'y' keeps the bob but no travel (the game moves the
 // character), 'xyz' keeps falls (attacks stay in place so they never slide or snap back), 'none' keeps the pose only. cut trims to [start,end] seconds.
 export const CLIPS=[
@@ -34,7 +34,9 @@ export const CLIPS=[
  {name:'Bash',file:'Bash',root:'y'},
  {name:'Kick',file:'Kick',root:'y'},
  {name:'Stagger',file:'Stagger',root:'y'},
- {name:'GuardWalk',file:'GuardWalk',root:'y'}
+ {name:'GuardWalk',file:'GuardWalk',root:'y'},
+ // source: this clip was bought on another character's rig (clips are read as rotations away from the bind pose, so any rig serves).
+ {name:'Bow',file:'Bow',root:'y',source:'archer-male'}
 ];
 
 const SIZE={5120:1,5121:1,5122:2,5123:2,5125:4,5126:4},COMPONENTS={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT4:16};
@@ -108,7 +110,7 @@ function build(name,clips){
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===path.resolve('scripts/prepare-assets.mjs')){
- const clips=CLIPS.map(config=>[config,readClip(path.join(RAW,SOURCE,config.file+'.glb'),config.cut)]);
+ const clips=CLIPS.map(config=>[config,readClip(path.join(RAW,config.source||SOURCE,config.file+'.glb'),config.cut)]);
  const manifest=JSON.parse(fs.readFileSync(path.join(OUT,'..','manifest.json'),'utf8'));manifest.version=2;manifest.description='Sculpted, skinned 3D characters with skeletal animation. Metres, Y up, facing +Z. Cosmetic variants share gameplay stats.';manifest.characters=[];
  for(const name of CHARACTERS){const [classId,bodyType]=name.split('-'),info=build(name,clips);manifest.characters.push({classId,bodyType,...info});console.log(name,(info.bytes/1e6).toFixed(2)+' MB',info.triangles+' tris',info.animations.length+' clips');}
  fs.writeFileSync(path.join(OUT,'..','manifest.json'),JSON.stringify(manifest,null,2)+'\n');
