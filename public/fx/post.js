@@ -23,7 +23,7 @@ export function createPost(renderer,scene,camera){
  function build(){
   const size=renderer.getDrawingBufferSize(new T.Vector2());
   composer=new EffectComposer(renderer,new T.WebGLRenderTarget(size.x,size.y,{type:T.HalfFloatType,samples:4}));
-  composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new T.Vector2(size.x/2,size.y/2),.55,.65,1.15));
+  composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new T.Vector2(size.x/2,size.y/2),.42,.6,1.25));
   grade=new ShaderPass(GRADE);composer.addPass(grade);composer.addPass(new OutputPass());
  }
  try{build();}catch{enabled=false;}

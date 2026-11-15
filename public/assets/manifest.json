@@ -7,7 +7,7 @@
       "classId": "knight",
       "bodyType": "male",
       "file": "knight-male.glb",
-      "bytes": 1589156,
+      "bytes": 1848828,
       "triangles": 28352,
       "bones": 24,
       "animations": [
@@ -22,14 +22,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "knight",
       "bodyType": "female",
       "file": "knight-female.glb",
-      "bytes": 1679644,
+      "bytes": 1939316,
       "triangles": 28432,
       "bones": 24,
       "animations": [
@@ -44,14 +53,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "mage",
       "bodyType": "male",
       "file": "mage-male.glb",
-      "bytes": 1634920,
+      "bytes": 1894592,
       "triangles": 29001,
       "bones": 24,
       "animations": [
@@ -66,14 +84,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "mage",
       "bodyType": "female",
       "file": "mage-female.glb",
-      "bytes": 1701988,
+      "bytes": 1961660,
       "triangles": 29994,
       "bones": 24,
       "animations": [
@@ -88,14 +115,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "rogue",
       "bodyType": "male",
       "file": "rogue-male.glb",
-      "bytes": 1644400,
+      "bytes": 1904076,
       "triangles": 29488,
       "bones": 24,
       "animations": [
@@ -110,14 +146,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "rogue",
       "bodyType": "female",
       "file": "rogue-female.glb",
-      "bytes": 1619344,
+      "bytes": 1879016,
       "triangles": 29558,
       "bones": 24,
       "animations": [
@@ -132,14 +177,23 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     },
     {
       "classId": "elf",
       "bodyType": "female",
       "file": "elf-female.glb",
-      "bytes": 1640656,
+      "bytes": 1900328,
       "triangles": 28584,
       "bones": 24,
       "animations": [
@@ -154,7 +208,16 @@
         "CastSky",
         "Roll",
         "Parry",
-        "Death"
+        "Death",
+        "LeftSlash",
+        "Overhead",
+        "WideSlash",
+        "Hammer",
+        "Block",
+        "Bash",
+        "Kick",
+        "Stagger",
+        "GuardWalk"
       ]
     }
   ],

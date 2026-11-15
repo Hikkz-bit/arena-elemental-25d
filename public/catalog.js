@@ -1,18 +1,18 @@
 export const CLASSES = {
  mage: {name:'Mago',role:'Controle à distância',hp:100,speed:115,color:'#9fc7ff',description:'Combina explosões, lentidão e um raio que mira o rival mais próximo.',abilities:[
-  {name:'Bola de fogo',hint:'EXPLOSÃO',cooldown:.7,kind:'fire',damage:28},
+  {name:'Bola de fogo',hint:'EXPLOSÃO',cooldown:1.3,kind:'fire',damage:28},
   {name:'Lança de gelo',hint:'LENTIDÃO',cooldown:1.5,kind:'ice',damage:20},
   {name:'Relâmpago',hint:'ÁREA',cooldown:4,kind:'bolt',damage:46}]},
  knight: {name:'Cavaleiro',role:'Resistência e combate próximo',hp:130,speed:95,color:'#f3cc8d',description:'Mais vida. Aproxime-se com a investida e acerte espada e impacto no chão.',abilities:[
-  {name:'Corte de aço',hint:'CORPO A CORPO',cooldown:.65,kind:'slash',damage:32,range:57},
+  {name:'Corte de aço',hint:'NÃO BLOQUEÁVEL',cooldown:2.4,kind:'slash',damage:32,range:57},
   {name:'Investida',hint:'AVANÇO + GOLPE',cooldown:2.2,kind:'charge',damage:30,range:78,duration:.32},
   {name:'Abalo sísmico',hint:'ÁREA PRÓXIMA',cooldown:4.5,kind:'quake',damage:48,range:82}]},
  rogue: {name:'Assassino',role:'Velocidade e precisão',hp:80,speed:145,color:'#8dedcc',description:'Menos vida, mais velocidade. Lance adagas, esquive e finalize pelas costas.',abilities:[
-  {name:'Adaga voadora',hint:'PROJÉTIL RÁPIDO',cooldown:.6,kind:'dagger',damage:24},
+  {name:'Adaga voadora',hint:'PROJÉTIL RÁPIDO',cooldown:1.1,kind:'dagger',damage:24},
   {name:'Passo sombrio',hint:'ESQUIVA · SEM DANO',cooldown:2,kind:'dash',damage:0,range:105,duration:.26},
   {name:'Golpe furtivo',hint:'BÔNUS PELAS COSTAS',cooldown:3,kind:'backstab',damage:42,range:62}]},
  elf: {name:'Elfa',role:'Alcance e mobilidade',hp:95,speed:130,color:'#ffe9a8',description:'Lança de longo alcance, um salto que atravessa a arena e uma flecha de luz veloz.',abilities:[
-  {name:'Estocada de lança',hint:'ALCANCE LONGO',cooldown:.7,kind:'pierce',damage:26,range:74},
+  {name:'Estocada de lança',hint:'NÃO BLOQUEÁVEL',cooldown:2.2,kind:'pierce',damage:26,range:74},
   {name:'Salto lunar',hint:'AVANÇO + GOLPE',cooldown:2.4,kind:'charge',damage:24,range:96,duration:.3},
   {name:'Flecha de luz',hint:'PROJÉTIL VELOZ',cooldown:3.2,kind:'light',damage:38}]}
 };

@@ -9,7 +9,7 @@ import {newRoom,newPlayer,reset,advance,snapshot,MAX} from '../worker/engine.mjs
 
 const publicDir=fileURLToPath(new URL('../public/',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.glb':'model/gltf-binary','.json':'application/json'};
-const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,fire:[false,false,false]});
+const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,light:false,heavy:false,guardbreak:false,guard:false,fire:[false,false,false]});
 const hash=token=>createHash('sha256').update(token).digest('hex');
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 export function createArena({allowedOrigins=[],maxRooms=200}={}){
@@ -59,13 +59,13 @@ export function createArena({allowedOrigins=[],maxRooms=200}={}){
      if(!p){if(m.id)fail('Sessão inválida.',401);if(entry.state.players.length>=MAX)fail('A sala já tem 3 jogadores.',409);if(!['lobby','finished'].includes(entry.state.phase))fail('A partida já começou.',409);const slot=[0,1,2].find(i=>!entry.state.players.some(p=>p.slot===i));p=newPlayer(randomUUID(),secret,name,slot,now);p.classId=m.classId||'mage';p.bodyType=m.bodyType||'male';const profile=classOf(p.classId);Object.assign(p,{hp:profile.hp,maxHp:profile.hp,speed:profile.speed});entry.state.players.push(p);entry.state.host??=p.id;}
      const prior=entry.connections.get(p.id);entry.connections.set(p.id,ws);if(prior&&prior!==ws){prior.entry=prior.player=null;prior.close(4001,'Sessão aberta em outra conexão');}
      ws.entry=entry;ws.player=p;p.seen=now;p.input=idle();entry.lastUsed=now;entry.disconnected.delete(p.id);
-     if(entry.state.training&&entry.state.players.length===1){for(let i=1;i<3;i++){const bot=newPlayer('bot-'+i,'',"Alvo "+i,i,now);bot.bot=true;bot.bodyType=i===1?'female':'male';bot.classId=i===1?'rogue':'knight';Object.assign(bot,{hp:classOf(bot.classId).hp,maxHp:classOf(bot.classId).hp,speed:classOf(bot.classId).speed});entry.state.players.push(bot);}}result={id:p.id,token:m.token,room:view(entry)};
+     if(entry.state.training&&entry.state.players.length===1){for(let i=1;i<3;i++){const bot=newPlayer('bot-'+i,'',"Alvo "+i,i,now);bot.bot=true;bot.aggressive=i===1;bot.name=i===1?'Rival':'Alvo';bot.bodyType=i===1?'female':'male';bot.classId=i===1?'rogue':'knight';Object.assign(bot,{hp:classOf(bot.classId).hp,maxHp:classOf(bot.classId).hp,speed:classOf(bot.classId).speed});entry.state.players.push(bot);}}result={id:p.id,token:m.token,room:view(entry)};
     }else{
      const entry=ws.entry,p=ws.player;if(!entry||!p)fail('Entre em uma sala.',401);
      p.seen=now;entry.lastUsed=now;
      if(m.action==='input'){
-      const i=m.input;if(!Number.isSafeInteger(m.seq)||!i||![-1,0,1].includes(i.forward)||![-1,0,1].includes(i.strafe)||!Number.isFinite(i.yaw)||Math.abs(i.yaw)>100000||!Number.isFinite(i.pitch)||Math.abs(i.pitch)>1.35||typeof i.jump!=='boolean'||(i.parry!==undefined&&typeof i.parry!=='boolean')||(i.dash!==undefined&&typeof i.dash!=='boolean')||!Array.isArray(i.fire)||i.fire.length!==3||!i.fire.every(v=>typeof v==='boolean'))fail('Comando inválido.');
-      if(m.seq>p.seq){p.seq=m.seq;ws.lastInput=now;p.parryQueued||=i.parry===true&&!p.input.parry;p.dashQueued||=i.dash===true&&!p.input.dash;p.input={forward:i.forward,strafe:i.strafe,yaw:i.yaw,pitch:i.pitch,jump:i.jump,parry:i.parry===true,dash:i.dash===true,fire:[...i.fire]};}return;
+      const i=m.input;if(!Number.isSafeInteger(m.seq)||!i||![-1,0,1].includes(i.forward)||![-1,0,1].includes(i.strafe)||!Number.isFinite(i.yaw)||Math.abs(i.yaw)>100000||!Number.isFinite(i.pitch)||Math.abs(i.pitch)>1.35||typeof i.jump!=='boolean'||(i.parry!==undefined&&typeof i.parry!=='boolean')||(i.dash!==undefined&&typeof i.dash!=='boolean')||['light','heavy','guardbreak','guard'].some(k=>i[k]!==undefined&&typeof i[k]!=='boolean')||(i.stance!==undefined&&![0,1,2].includes(i.stance))||!Array.isArray(i.fire)||i.fire.length!==3||!i.fire.every(v=>typeof v==='boolean'))fail('Comando inválido.');
+      if(m.seq>p.seq){p.seq=m.seq;ws.lastInput=now;p.parryQueued||=i.parry===true&&!p.input.parry;p.dashQueued||=i.dash===true&&!p.input.dash;for(const k of ['light','heavy','guardbreak'])p[k+'Queued']||=i[k]===true&&!p.input[k];p.input={forward:i.forward,strafe:i.strafe,yaw:i.yaw,pitch:i.pitch,jump:i.jump,parry:i.parry===true,dash:i.dash===true,light:i.light===true,heavy:i.heavy===true,guardbreak:i.guardbreak===true,guard:i.guard===true,stance:i.stance??1,fire:[...i.fire]};}return;
      }else if(m.action==='configure'){
       if(!['lobby','finished'].includes(entry.state.phase))fail('Escolha antes de começar a partida.',409);
       if(m.classId!==undefined&&!Object.hasOwn(CLASSES,m.classId))fail('Classe inválida.');

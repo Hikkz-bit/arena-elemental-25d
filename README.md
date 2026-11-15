@@ -28,6 +28,18 @@ Quarta classe: **Elfa** (lanceira; estocada de alcance longo, salto lunar e flec
 
 Imagem e sensação de jogo: `public/fx/post.js` desenha a cena em HDR com bloom, vinheta e um leve desvio de cor nos impactos (botão **Efeitos** no topo; desliga sozinho se a máquina não segurar 30 quadros por segundo). `public/fx/audio.js` sintetiza todos os sons no navegador (golpes, magias, passos e um ambiente por arena), sem arquivos de áudio. Golpes têm rastro luminoso na arma, tremor de câmera, uma pausa curta no acerto, números de dano e barra de vida sobre os rivais. **Q** (ou Tab, ou o botão do meio do mouse) trava a mira no rival mais próximo, como num duelo.
 
+## Combate de duelo
+
+Inspirado nos jogos de duelo com guarda direcional, com regras próprias (em `worker/engine.mjs`, constantes em `COMBAT`):
+
+- **Guarda** em três direções (esquerda, cima, direita). Com a mira travada (**Q**), mover o mouse escolhe a direção; sem trava, use as setas ← ↑ →. O anel na base da tela mostra a sua guarda; o anel em volta do rival mostra a dele, já espelhado.
+- **Golpe leve** (clique, ou F) e **golpe pesado** (botão direito, ou G) saem do lado da guarda. O pesado demora mais, tira mais vida e ainda arranha quando bloqueado.
+- **Bloqueio** é automático: se você está de frente, parado de ataques e com a guarda no lado de onde o golpe vem, ele não entra. Quando o rival prepara um golpe, o lado acende em vermelho no anel dele — ponha a sua guarda ali.
+- **Parry** (Ctrl) no instante do golpe atordoa quem atacou. **Quebra de guarda** (E) atordoa quem só está bloqueando, mas ricocheteia em quem já está atacando.
+- **Estamina**: tudo custa fôlego e ele volta depois de 0,7 s sem atacar. Com a mira travada você anda em guarda, mais devagar.
+- As habilidades 1, 2 e 3 de cada classe continuam, agora como especiais com recarga, e não são bloqueadas pela guarda (só por parry ou esquiva).
+- No treino, o **Rival** se aproxima, troca de guarda e ataca; o **Alvo** só defende, para praticar quebra de guarda.
+
 Cenários: `public/world.js` monta as quatro arenas em código — céu em shader (estrelas, lua, nuvens, aurora, brasas), piso pintado com círculo rúnico luminoso, fundo próprio (catedral em ruínas, vulcão com rios de lava, floresta com lanternas, cidadela de gelo), partículas e névoa. As peças paradas são fundidas em uma malha por material para manter poucas chamadas de desenho.
 
 O Assassino arremessa com a mão vazia (as adagas ficam embainhadas nas coxas e uma só é sacada na estocada); a adaga voa girando.

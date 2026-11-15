@@ -25,7 +25,16 @@ export const CLIPS=[
  {name:'CastSky',file:'CastSky',root:'y'},
  {name:'Roll',file:'Roll',root:'y'},
  {name:'Parry',file:'Parry',root:'y'},
- {name:'Death',file:'Death',root:'xyz'}
+ {name:'Death',file:'Death',root:'xyz'},
+ {name:'LeftSlash',file:'LeftSlash',root:'y'},
+ {name:'Overhead',file:'Overhead',root:'y'},
+ {name:'WideSlash',file:'WideSlash',root:'y'},
+ {name:'Hammer',file:'Hammer',root:'y'},
+ {name:'Block',file:'Block',root:'y'},
+ {name:'Bash',file:'Bash',root:'y'},
+ {name:'Kick',file:'Kick',root:'y'},
+ {name:'Stagger',file:'Stagger',root:'y'},
+ {name:'GuardWalk',file:'GuardWalk',root:'y'}
 ];
 
 const SIZE={5120:1,5121:1,5122:2,5123:2,5125:4,5126:4},COMPONENTS={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT4:16};

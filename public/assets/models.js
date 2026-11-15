@@ -76,11 +76,18 @@ const SWINGS={
  mage2:{R:[[0,.1,.05,.2,0,0],[0,.3,-.05,.6,0,0]],L:[[0,.05,0,0,0,0],[.08,.3,-.1,.5,0,0]]},
  elf0:{R:[[.05,.05,.2,-.5,0,0],[-.18,.1,-.45,-1.25,0,.1]],L:[[0,0,0,0,0,0],[.1,.05,-.1,0,.2,0]]},
  elf1:{R:[[.05,.1,.2,-.6,0,0],[-.2,.12,-.5,-1.3,0,.1]],L:[[0,0,0,0,0,0],[.12,.1,-.15,0,.3,0]]},
- elf2:{R:[[0,.05,.1,.1,0,0],[-.05,.2,-.1,.3,0,0]],L:[[0,0,.1,0,0,0],[.2,.15,-.35,-.3,0,0]]}
+ elf2:{R:[[0,.05,.1,.1,0,0],[-.05,.2,-.1,.3,0,0]],L:[[0,0,.1,0,0,0],[.2,.15,-.35,-.3,0,0]]},
+ // Duel swings from the left, from above and from the right, and the guard-break shove.
+ duel0:{R:[[-.45,.15,.1,.2,0,.9],[.2,-.05,-.3,-.5,0,-.8]],L:[[0,0,0,0,0,0],[.05,-.03,.06,0,0,0]]},
+ duel1:{R:[[0,.35,.1,1.1,0,0],[-.1,-.2,-.3,-1.3,0,0]],L:[[0,.05,0,0,0,0],[.06,-.06,.05,0,0,0]]},
+ duel2:{R:[[.25,.2,.1,.4,0,-.9],[-.5,-.05,-.3,-.6,0,1]],L:[[0,0,0,0,0,0],[.05,-.03,.06,0,0,0]]},
+ shove:{R:[[.05,0,.15,0,0,0],[-.15,.05,-.4,-.3,0,0]],L:[[.05,0,.15,0,0,0],[-.15,.05,-.4,-.3,0,0]]}
 };
-// s: {t: attack progress 0..1 or -1, element, parry, burst, moving}
+// s: {t: attack progress 0..1 or -1, element (ability slot, or 'duel0'..'duel2'/'shove' for melee), hitAt: when the blow lands (0..1),
+// power, stance, parry, burst, moving}
 export function animateViewWeapon(root,s,time,dt=1/60){
- const v=root?.userData.view;if(!v)return;const k=1-Math.exp(-dt*18),swing=s.t>=0?SWINGS[v.classId+s.element]:null,wind=swing?ramp(s.t,0,.16)*(1-ramp(s.t,.16,.34)):0,strike=swing?ramp(s.t,.16,.34)*(1-ramp(s.t,.55,1)):0;
+ const v=root?.userData.view;if(!v)return;const melee=typeof s.element==='string',hit=s.hitAt??.34,power=s.power??1,k=1-Math.exp(-dt*18),swing=s.t>=0?SWINGS[melee?s.element:v.classId+s.element]:null,wind=swing?ramp(s.t,0,hit*.5)*(1-ramp(s.t,hit*.5,hit))*power:0,strike=swing?ramp(s.t,hit*.5,hit)*(1-ramp(s.t,Math.min(.95,hit+.2),1))*power:0;
+ v.side=(v.side??0)+(((s.stance??1)-1)-(v.side??0))*k;v.top=(v.top??0)+(((s.stance??1)===1?1:0)-(v.top??0))*k;
  v.guard+=((s.parry?1:0)-v.guard)*k;v.drop+=((s.burst?1:0)-v.drop)*k;
  for(const side of [-1,1]){
   const h=v.hands[side],pose=swing?swing[side>0?'R':'L']:null,p=[0,0,0,0,0,0];
@@ -88,8 +95,10 @@ export function animateViewWeapon(root,s,time,dt=1/60){
   // Guard: the knight brings the shield across; the others cross their forearms.
   if(v.classId==='knight'&&side<0){p[0]-=.3*v.guard;p[1]+=.2*v.guard;p[2]-=.1*v.guard;p[4]-=.4*v.guard;}else{p[0]-=.15*v.guard;p[1]+=.22*v.guard;p[2]-=.05*v.guard;p[5]+=.8*v.guard;}
   p[1]-=.25*v.drop;p[2]+=.1*v.drop;p[0]+=.1*v.drop;
+  // Guard side: both hands drift toward the guarded side, or rise for the top guard.
+  if(!swing){p[0]+=side*v.side*.11;p[1]+=v.top*.07;p[5]+=-v.side*.25;}
   const bob=s.moving?Math.sin(time*11+(side>0?0:Math.PI))*.012:Math.sin(time*1.7+side)*.004;
   h.hand.position.set(h.rest.x+side*p[0],h.rest.y+p[1]+bob,h.rest.z+p[2]);h.hand.rotation.set(p[3],side*p[4],side*p[5]);
  }
- if(v.classId==='rogue')v.hands[1].weapon.visible=s.t>=0&&s.element===2;
+ if(v.classId==='rogue')v.hands[1].weapon.visible=s.t>=0&&(s.element===2||(melee&&s.element!=='shove'));
 }

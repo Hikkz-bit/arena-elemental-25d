@@ -1,27 +1,72 @@
 import {classOf} from '../public/catalog.js';
-import {motion,forward,clamp,segmentDistance,PILLARS} from '../public/physics.js';
+import {motion,move,forward,clamp,segmentDistance,PILLARS} from '../public/physics.js';
 export const MAX=3,GOAL=5;
 // Universal dash (Shift): short burst along the held direction with brief invulnerability, like the dodge of arena brawlers.
 export const DASH={range:3.4,duration:.22,cooldown:2.5,inv:.22};
-const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,fire:[false,false,false]});
+const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,light:false,heavy:false,guardbreak:false,guard:false,fire:[false,false,false]});
 const spawn=slot=>[[-6,6],[6,6],[0,-7]][slot];
 function place(p){const [x,z]=spawn(p.slot);Object.assign(p,{x,z,y:0,vy:0,yaw:Math.atan2(-x,z),pitch:0});}
 export function newRoom(code,now){return {code,mapId:'abbey',phase:'lobby',players:[],shots:[],bolts:[],events:[],eid:0,host:null,last:now,elapsed:0,round:0,winner:null};}
-export function newPlayer(id,hash,name,slot,now){const p={id,hash,name,slot,classId:'mage',bodyType:'male',maxHp:100,hp:100,speed:115,kills:0,deaths:0,seen:now,input:idle(),seq:-1,cd:[0,0,0],cast:0,element:0,parry:0,parryCd:0,parryFlash:0,parryHeld:false,parryQueued:false,dashCd:0,dashHeld:false,dashQueued:false,slow:0,inv:0,respawn:0,burst:null,moving:false};place(p);return p;}
+export function newPlayer(id,hash,name,slot,now){const p={id,hash,name,slot,classId:'mage',bodyType:'male',maxHp:100,hp:100,speed:115,kills:0,deaths:0,seen:now,input:idle(),seq:-1,cd:[0,0,0],cast:0,element:0,parry:0,parryCd:0,parryFlash:0,parryHeld:false,parryQueued:false,dashCd:0,dashHeld:false,dashQueued:false,stance:1,stamina:100,staminaWait:0,attack:null,stun:0,guard:0,guardMode:false,buffered:null,slow:0,inv:0,respawn:0,burst:null,moving:false};place(p);return p;}
 function event(s,type,data){s.events.push({id:++s.eid,type,...data});s.events=s.events.slice(-60);}
-export function reset(s,now){Object.assign(s,{round:s.round+1,phase:'countdown',countdown:3,elapsed:0,winner:null,shots:[],bolts:[],last:now});for(const p of s.players){const c=classOf(p.classId);Object.assign(p,{hp:c.hp,maxHp:c.hp,speed:c.speed,kills:0,deaths:0,cd:[0,0,0],input:idle(),cast:0,inv:0,slow:0,respawn:0,burst:null,parry:0,parryCd:0,parryFlash:0,parryQueued:false,parryHeld:false,dashCd:0,dashQueued:false,dashHeld:false});place(p);}event(s,'round',{});}
+export function reset(s,now){Object.assign(s,{round:s.round+1,phase:'countdown',countdown:3,elapsed:0,winner:null,shots:[],bolts:[],last:now});for(const p of s.players){const c=classOf(p.classId);Object.assign(p,{hp:c.hp,maxHp:c.hp,speed:c.speed,kills:0,deaths:0,cd:[0,0,0],input:idle(),cast:0,inv:0,slow:0,respawn:0,burst:null,parry:0,parryCd:0,parryFlash:0,parryQueued:false,parryHeld:false,dashCd:0,dashQueued:false,dashHeld:false,stamina:100,staminaWait:0,attack:null,stun:0,guard:0,buffered:null});place(p);}event(s,'round',{});}
 function dodge(s,p,input){const f=forward(p.yaw),fw=input.forward||0,st=input.strafe||0,len=Math.hypot(fw,st),a=len?fw/len:1,b=len?st/len:0,dx=f.x*a+Math.cos(p.yaw)*b,dz=f.z*a+Math.sin(p.yaw)*b;p.dashCd=DASH.cooldown;p.inv=Math.max(p.inv,DASH.inv);event(s,'dash',{owner:p.id,x:p.x,y:p.y+.9,z:p.z,yaw:p.yaw});p.burst={id:s.eid,kind:'dodge',angle:Math.atan2(b,a),fromX:p.x,fromZ:p.z,previousX:p.x,previousZ:p.z,toX:clamp(p.x+dx*DASH.range,-11.5,11.5),toZ:clamp(p.z+dz*DASH.range,-9.5,9.5),elapsed:0,duration:DASH.duration,damage:0,hits:[]};}
 function damage(s,p,amount,owner,slow=0){if(s.phase!=='playing'||p.hp<=0||p.inv>0||s.last-p.seen>=8000)return;if(p.parry>0){p.parryCd=0;p.parryFlash=.35;event(s,'parry',{target:p.id,x:p.x,y:p.y+1,z:p.z});return;}p.hp=Math.max(0,p.hp-amount);p.slow=Math.max(p.slow,slow);event(s,'hit',{target:p.id,owner,amount,x:p.x,y:p.y+1,z:p.z});if(p.hp===0){p.deaths++;p.respawn=2.5;p.burst=null;p.input=idle();const a=s.players.find(q=>q.id===owner);if(a&&a.id!==p.id){a.kills++;if(a.kills>=GOAL){s.phase='finished';s.winner=a.id;}}event(s,'ko',{target:p.id,owner});}}
-function fire(s,p,i){if(p.cd[i]>0||p.burst||s.phase!=='playing')return;const a=classOf(p.classId).abilities[i],f=forward(p.yaw);p.cd[i]=a.cooldown;p.cast=.42;p.element=i;event(s,'cast',{owner:p.id,kind:a.kind,x:p.x,y:p.y+1.3,z:p.z,yaw:p.yaw});
+function fire(s,p,i){if(p.cd[i]>0||p.burst||p.stun>0||p.attack||s.phase!=='playing')return;const a=classOf(p.classId).abilities[i],f=forward(p.yaw);p.cd[i]=a.cooldown;p.cast=.42;p.element=i;event(s,'cast',{owner:p.id,kind:a.kind,x:p.x,y:p.y+1.3,z:p.z,yaw:p.yaw});
  if(['fire','ice','dagger','light'].includes(a.kind)){const speed={fire:11,ice:15,dagger:19,light:24}[a.kind],cp=Math.cos(p.pitch);s.shots.push({id:s.eid,owner:p.id,kind:a.kind,damage:a.damage,x:p.x+f.x*.7,y:p.y+1.45,z:p.z+f.z*.7,vx:f.x*cp*speed,vy:Math.sin(p.pitch)*speed,vz:f.z*cp*speed,life:2});}
  else if(a.kind==='bolt'){const targets=s.players.filter(q=>q.id!==p.id&&q.hp>0&&s.last-q.seen<8000).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));const q=targets[0],x=q?.x??p.x+f.x*5,z=q?.z??p.z+f.z*5;s.bolts.push({id:s.eid,owner:p.id,x,z,t:.76,damage:a.damage});event(s,'bolt',{x,z});}
  else if(a.kind==='dash'||a.kind==='charge'){const range=a.range/20;p.burst={id:s.eid,kind:a.kind,fromX:p.x,fromZ:p.z,previousX:p.x,previousZ:p.z,toX:clamp(p.x+f.x*range,-11.5,11.5),toZ:clamp(p.z+f.z*range,-9.5,9.5),elapsed:0,duration:a.duration,damage:a.damage,hits:[]};}
  else{event(s,'ability',{owner:p.id,kind:a.kind,x:p.x,y:p.y+.1,z:p.z,yaw:p.yaw,range:a.range/20});for(const q of s.players){const dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);if(q.id===p.id||Math.abs(p.y-q.y)>1.8||d>a.range/20||(a.kind!=='quake'&&(dx*f.x+dz*f.z)/(d||1)<.25))continue;const qf=forward(q.yaw),bonus=a.kind==='backstab'&&f.x*qf.x+f.z*qf.z>.5?18:0;damage(s,q,a.damage+bonus,p.id);}}
 }
+// Duel rules. Every fighter holds a guard in one of three directions (0 left, 1 top, 2 right) and swings from that side.
+// An attack is blocked when the defender faces the attacker, is not swinging or stunned, and guards the side it comes from
+// (the attacker's right is the defender's left). Lights are quick, heavies hit hard but can be parried on reaction,
+// a guard break opens someone who only blocks, and everything costs stamina.
+export const COMBAT={stamina:100,regen:24,regenDelay:.7,hitstun:.22,parryStun:.9,parryDrain:25,blockRecover:.4,chip:4,buffer:.35,
+ light:{windup:.28,recover:.3,damage:14,stamina:10,range:2.7,lunge:.5},
+ heavy:{windup:.62,recover:.45,damage:30,stamina:20,range:3,lunge:.7},
+ guardbreak:{windup:.32,recover:.4,damage:0,stamina:14,range:1.9,lunge:.6,stun:.9}};
+export const mirror=direction=>2-direction;
+function blocks(q,p,direction){const dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz)||1,f=forward(q.yaw);return q.stun<=0&&!q.attack&&!q.burst&&q.stance===mirror(direction)&&(dx*f.x+dz*f.z)/d>.2;}
+function strike(s,p,a,spec){
+ const f=forward(p.yaw);
+ for(const q of s.players){
+  const dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);
+  if(q.id===p.id||q.hp<=0||Math.abs(p.y-q.y)>1.8||d>spec.range||(dx*f.x+dz*f.z)/(d||1)<.3||q.inv>0||s.last-q.seen>=8000)continue;
+  const at={x:q.x,y:q.y+1,z:q.z};
+  if(q.parry>0){q.parryCd=0;q.parryFlash=.35;p.stun=COMBAT.parryStun;p.stamina=Math.max(0,p.stamina-COMBAT.parryDrain);p.attack=null;event(s,'parry',{target:q.id,...at});return;}
+  if(a.kind==='guardbreak'){if(q.attack&&!q.attack.done){a.extra=.35;event(s,'clash',{owner:p.id,target:q.id,...at});}else{q.stun=spec.stun;q.attack=null;event(s,'guardbreak',{owner:p.id,target:q.id,...at});}continue;}
+  if(blocks(q,p,a.dir)){q.guard=.3;a.extra=COMBAT.blockRecover;q.stamina=Math.max(0,q.stamina-(a.kind==='heavy'?12:5));q.staminaWait=COMBAT.regenDelay;if(a.kind==='heavy')q.hp=Math.max(1,q.hp-COMBAT.chip);event(s,'block',{owner:p.id,target:q.id,dir:a.dir,...at});continue;}
+  if(q.attack&&!q.attack.done&&q.attack.kind!=='heavy')q.attack=null;
+  q.stun=Math.max(q.stun,COMBAT.hitstun);damage(s,q,spec.damage,p.id);
+ }
+}
+function combat(s,p,input,dt){
+ p.guardMode=!!input.guard;
+ if(p.staminaWait<=0)p.stamina=Math.min(COMBAT.stamina,p.stamina+COMBAT.regen*dt);
+ // A press made while busy is remembered for a moment, so combos do not need frame-perfect timing.
+ for(const kind of ['guardbreak','heavy','light']){const on=p[kind+'Queued']||(input[kind]&&!p[kind+'Held']);p[kind+'Queued']=false;p[kind+'Held']=!!input[kind];if(on)p.buffered={kind,left:COMBAT.buffer};}
+ if(p.buffered&&(p.buffered.left-=dt)<0)p.buffered=null;
+ if(!p.attack&&[0,1,2].includes(input.stance))p.stance=input.stance;
+ if(p.buffered&&p.stun<=0&&!p.attack&&!p.burst){const kind=p.buffered.kind,spec=COMBAT[kind];p.buffered=null;if(p.stamina>=spec.stamina){p.stamina-=spec.stamina;p.staminaWait=COMBAT.regenDelay;event(s,'swing',{owner:p.id,kind,dir:p.stance,x:p.x,y:p.y+1.2,z:p.z,yaw:p.yaw});p.attack={id:s.eid,kind,dir:p.stance,t:0,done:false,extra:0};}}
+ const a=p.attack;if(!a)return;const spec=COMBAT[a.kind];a.t+=dt;
+ if(!a.done){const f=forward(p.yaw),step=spec.lunge*dt/spec.windup;move(p,f.x*step,f.z*step);if(a.t>=spec.windup){a.done=true;strike(s,p,a,spec);}}
+ if(p.attack===a&&a.t>=spec.windup+spec.recover+a.extra)p.attack=null;
+}
+// Training rivals: they face the nearest player and change guard now and then; the aggressive one closes in and attacks.
+function botThink(s,p,dt){
+ const ai=p.ai??={think:1.5,stance:0},input=p.input,target=s.players.filter(q=>!q.bot&&q.hp>0&&s.last-q.seen<8000).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];
+ Object.assign(input,{forward:0,strafe:0,light:false,heavy:false,guardbreak:false,guard:true});if(!target)return;
+ const dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz);input.yaw=Math.atan2(dx,-dz);
+ if((ai.stance-=dt)<=0){input.stance=Math.floor(Math.random()*3);ai.stance=1+Math.random()*1.5;}
+ if(!p.aggressive)return;if(d>2.3)input.forward=1;
+ if((ai.think-=dt)<=0&&d<2.9){const r=Math.random();input.light=r<.6;input.heavy=r>=.6&&r<.88;input.guardbreak=r>=.88;ai.think=1.2+Math.random()*1.4;}
+}
 function tick(s,dt,now){for(const p of s.players)if(p.bot)p.seen=now;if(s.phase==='countdown'){s.countdown-=dt;if(s.countdown<=0)s.phase='playing';return;}if(s.phase!=='playing')return;s.elapsed+=dt;const sweeps=[];
- for(const p of s.players){for(const key of ['parry','parryCd','parryFlash','dashCd','cast','inv','slow'])p[key]=Math.max(0,(p[key]||0)-dt);p.cd=p.cd.map(n=>Math.max(0,n-dt));if(p.hp<=0){p.burst=null;p.parry=0;p.parryQueued=false;p.dashQueued=false;p.respawn-=dt;if(p.respawn<=0&&now-p.seen<8000){place(p);p.hp=p.maxHp;p.inv=1.6;event(s,'respawn',{target:p.id});}continue;}const input=now-p.seen<2200?p.input:idle(),press=p.parryQueued||(input.parry&&!p.parryHeld);p.parryQueued=false;p.parryHeld=!!input.parry;if(press&&p.parryCd<=0){p.parry=.3;p.parryCd=1.2;}const dash=p.dashQueued||(input.dash&&!p.dashHeld);p.dashQueued=false;p.dashHeld=!!input.dash;if(dash&&p.dashCd<=0&&!p.burst)dodge(s,p,input);const x=p.x,z=p.z;motion(p,input,dt);p.moving=!!input.forward||!!input.strafe||!!p.burst;if(p.burst)sweeps.push({p,b:p.burst,x,z});}
+ for(const p of s.players){for(const key of ['parry','parryCd','parryFlash','dashCd','cast','inv','slow','stun','guard','staminaWait'])p[key]=Math.max(0,(p[key]||0)-dt);p.cd=p.cd.map(n=>Math.max(0,n-dt));if(p.hp<=0){p.burst=null;p.parry=0;p.parryQueued=false;p.dashQueued=false;p.attack=null;p.buffered=null;p.stun=0;p.respawn-=dt;if(p.respawn<=0&&now-p.seen<8000){place(p);p.hp=p.maxHp;p.stamina=COMBAT.stamina;p.inv=1.6;event(s,'respawn',{target:p.id});}continue;}if(p.bot)botThink(s,p,dt);const raw=now-p.seen<2200?p.input:idle(),busy=p.stun>0||!!p.attack,input=busy?{...raw,forward:0,strafe:0,jump:false}:raw,press=p.parryQueued||(raw.parry&&!p.parryHeld);p.parryQueued=false;p.parryHeld=!!raw.parry;if(press&&p.parryCd<=0&&!busy){p.parry=.3;p.parryCd=1.2;}const dash=p.dashQueued||(raw.dash&&!p.dashHeld);p.dashQueued=false;p.dashHeld=!!raw.dash;if(dash&&p.dashCd<=0&&!p.burst&&!busy)dodge(s,p,raw);combat(s,p,raw,dt);const x=p.x,z=p.z;motion(p,input,dt);p.moving=!!input.forward||!!input.strafe||!!p.burst;if(p.burst)sweeps.push({p,b:p.burst,x,z});}
+ for(let i=0;i<s.players.length;i++)for(let j=i+1;j<s.players.length;j++){const a=s.players[i],b=s.players[j];if(a.hp<=0||b.hp<=0||a.burst||b.burst||Math.abs(a.y-b.y)>1.2)continue;const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d<1.3&&d>1e-4){const push=(1.3-d)/2;move(a,-dx/d*push,-dz/d*push);move(b,dx/d*push,dz/d*push);}}
  for(const {p,b,x,z} of sweeps){if(b.kind==='charge'&&p.hp>0)for(const q of s.players){if(q.id===p.id||q.hp<=0||Math.abs(q.y-p.y)>1.8||b.hits.includes(q.id))continue;if(segmentDistance(q.x,q.z,x,z,p.x,p.z).distance<.8){b.hits.push(q.id);damage(s,q,b.damage,p.id);}}if(b.elapsed>=b.duration)p.burst=null;}
- for(const p of s.players)if(p.hp>0&&now-p.seen<2200)for(let i=0;i<3;i++)if(p.input.fire[i])fire(s,p,i);
+ for(const p of s.players)if(p.hp>0&&now-p.seen<2200&&!p.bot)for(let i=0;i<3;i++)if(p.input.fire[i])fire(s,p,i);
  for(const a of s.shots){a.life-=dt;const x=a.x,y=a.y,z=a.z;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;
   if(a.y<0||Math.abs(a.x)>12||Math.abs(a.z)>10||PILLARS.some(([px,pz])=>segmentDistance(px,pz,x,z,a.x,a.z).distance<.72)){a.life=0;continue;}
   let target=null,nearest=2;for(const q of s.players){if(q.id===a.owner||q.hp<=0||q.inv>0||now-q.seen>=8000)continue;const hit=segmentDistance(q.x,q.z,x,z,a.x,a.z),hy=y+(a.y-y)*hit.t;if(hit.distance<.55&&hy>q.y+.05&&hy<q.y+1.9&&hit.t<nearest){target=q;nearest=hit.t;}}
@@ -31,4 +76,4 @@ function tick(s,dt,now){for(const p of s.players)if(p.bot)p.seen=now;if(s.phase=
  if(s.elapsed>=180&&s.phase==='playing'){const ranks=[...s.players].sort((a,b)=>b.kills-a.kills||a.deaths-b.deaths);s.phase='finished';s.winner=ranks[0]?.kills===ranks[1]?.kills?null:ranks[0]?.id;}
 }
 export function advance(s,now){for(const p of s.players)if(p.bot)p.seen=now;const active=s.players.filter(p=>now-p.seen<8000);if(!active.some(p=>p.id===s.host&&!p.bot))s.host=active.find(p=>!p.bot)?.id??s.host;if(active.length<2&&s.phase==='playing'){s.last=now;return;}let delta=clamp((now-s.last)/1000,0,.4);s.last=now;while(delta>0){const dt=Math.min(delta,1/60);tick(s,dt,now);delta-=dt;}}
-export function snapshot(s,now){return {...s,last:now,players:s.players.map(({hash,input,seq,seen,parryHeld,parryQueued,dashHeld,dashQueued,...p})=>({...p,burst:p.burst?{...p.burst,hits:undefined}:null,connected:!!p.bot||now-seen<8000})),waiting:s.players.filter(p=>p.bot||now-p.seen<8000).length<2};}
+export function snapshot(s,now){return {...s,last:now,players:s.players.map(({hash,input,seq,seen,parryHeld,parryQueued,dashHeld,dashQueued,lightHeld,lightQueued,heavyHeld,heavyQueued,guardbreakHeld,guardbreakQueued,buffered,ai,...p})=>({...p,burst:p.burst?{...p.burst,hits:undefined}:null,connected:!!p.bot||now-seen<8000})),waiting:s.players.filter(p=>p.bot||now-p.seen<8000).length<2};}

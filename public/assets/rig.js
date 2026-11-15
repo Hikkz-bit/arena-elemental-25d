@@ -2,7 +2,7 @@ import * as T from '../vendor/three.js';
 import {GLTFLoader} from '../vendor/GLTFLoader.js';
 import {clone as cloneSkinned} from '../vendor/SkeletonUtils.js';
 import {createWeapon} from './models.js';
-import {ACTIONS,LOWER_BONES,attackOf,pickLayers,legTwist} from './anim-state.js';
+import {ACTIONS,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from './anim-state.js';
 import {toonMaterial,outlineMaterial} from './toon.js';
 
 // Sculpted, skinned characters. Each GLB carries its own copy of the 12 clips; here they are cut into
@@ -50,7 +50,7 @@ function createTrail(a,color){
 function updateTrail(a,dt){
  const t=a.trail,scene=a.root.parent;if(!scene)return;if(t.mesh.parent!==scene)scene.add(t.mesh);t.mesh.visible=a.root.visible;
  for(const s of t.samples)s.life-=dt*4.5;while(t.samples.length&&t.samples[0].life<=0)t.samples.shift();
- if(SWINGS.has(a.attack)&&a.root.visible){a.root.updateMatrixWorld(true);const w=a.blade.weapon;t.samples.push({tip:w.localToWorld(new T.Vector3(0,a.blade.tip,0)),base:w.localToWorld(new T.Vector3(0,a.blade.base,0)),life:1});if(t.samples.length>t.n)t.samples.shift();}
+ if((SWINGS.has(a.attack)||a.melee)&&a.root.visible){a.root.updateMatrixWorld(true);const w=a.blade.weapon;t.samples.push({tip:w.localToWorld(new T.Vector3(0,a.blade.tip,0)),base:w.localToWorld(new T.Vector3(0,a.blade.base,0)),life:1});if(t.samples.length>t.n)t.samples.shift();}
  const position=t.mesh.geometry.attributes.position,color=t.mesh.geometry.attributes.color,count=t.samples.length;
  for(let i=0;i<t.n;i++){const s=t.samples[Math.min(i,count-1)],k=count?Math.max(0,s.life)*(i<count?(i+1)/count:0):0;if(s){position.setXYZ(i*2,s.tip.x,s.tip.y,s.tip.z);position.setXYZ(i*2+1,s.base.x,s.base.y,s.base.z);}color.setXYZ(i*2,t.color.r*k,t.color.g*k,t.color.b*k);color.setXYZ(i*2+1,t.color.r*k*.25,t.color.g*k*.25,t.color.b*k*.25);}
  position.needsUpdate=true;color.needsUpdate=true;
@@ -78,7 +78,7 @@ function attach(a,asset){
 
 export function createCharacter(classId='mage',bodyType='male'){
  const root=new T.Group();root.name=classId+'_'+bodyType;root.userData.asset={classId,bodyType,style:'Sculpted stylized fantasy',version:2};
- const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,layers:{U:{id:null,action:null},L:{id:null,action:null}},
+ const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,melee:null,meleeId:null,lastStun:0,lastGuard:0,guardPose:0,guardSide:0,guardTop:0,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,layers:{U:{id:null,action:null},L:{id:null,action:null}},
   dispose(){a.disposed=true;a.trail?.mesh.removeFromParent();root.removeFromParent();a.mixer?.stopAllAction();for(const m of a.materials||[])m.dispose();for(const g of a.geometries||[])g.dispose();a.skeleton?.dispose();}};
  a.loaded=loadCharacter(classId,bodyType).then(asset=>{if(!a.disposed)attach(a,asset);return a;});
  return a;
@@ -104,20 +104,27 @@ export function animateCharacter(a,p,time,dt=1/60){
  const cast=p.cast||0;let restart=false;
  if(cast>a.lastCast+.15){const id=attackOf(a.classId,p.element||0);if(id){a.attack=id;a.attackLeft=ACTIONS[id].time;restart=true;}}
  a.lastCast=cast;if(a.attack&&(a.attackLeft-=dt)<=0)a.attack=null;
- const layers=pickLayers(p,a.attack),move=p.move||{f:p.moving?1:0,s:0},legs=legTwist(move.f,move.s),running=layers.lower==='Run';
+ // Melee swings, stuns and blocks come straight from the server state; a new one restarts the clip.
+ const melee=p.hp>0?meleeOf(a.classId,p.attack):null;if(melee&&p.attack.id!==a.meleeId){a.meleeId=p.attack.id;restart=true;}a.melee=melee&&p.attack.kind!=='guardbreak'?melee:null;
+ if((p.stun||0)>a.lastStun+.1||(p.guard||0)>a.lastGuard+.1)restart=true;a.lastStun=p.stun||0;a.lastGuard=p.guard||0;
+ const layers=pickLayers({...p,classId:a.classId},a.attack),move=p.move||{f:p.moving?1:0,s:0},legs=legTwist(move.f,move.s),running=layers.lower==='Run';
  const runScale=RUN_SPEED[a.classId]/4.2*(p.slow>0?.55:1)*(legs.backwards?-.85:1);
  setLayer(a,'L',layers.lower,restart,runScale);setLayer(a,'U',layers.upper,restart,runScale);
+ for(const key of ['L','U'])if(a.layers[key].id==='Walk')a.layers[key].action.timeScale=legs.backwards?-1.15:1.15;
  a.mixer.update(dt);
  const ease=1-Math.exp(-dt*14),dodge=p.burst?.kind==='dodge',dash=layers.lower==='Dash',alive=p.hp>0;
  // Legs follow the direction of travel while the torso keeps aiming.
- a.twist+=((running?legs.angle:0)-a.twist)*ease;
+ a.twist+=((running||layers.lower==='Walk'?legs.angle:0)-a.twist)*ease;
  if(Math.abs(a.twist)>1e-3){const hips=a.bones.Hips,spine=a.bones.Spine02;q2.setFromAxisAngle(UP,-a.twist);hips.quaternion.premultiply(q2);q3.copy(hips.quaternion).invert();q2.setFromAxisAngle(UP,a.twist);q3.multiply(q2).multiply(hips.quaternion);spine.quaternion.premultiply(q3);}
  // The dash roll faces where it travels; it eases back to the aim afterwards.
  if(dodge)a.turnAngle=p.burst.angle||0;else a.turnAngle+=(0-a.turnAngle)*ease;a.pivot.rotation.y=Math.PI-a.turnAngle;
  // Lean into a sprint, bend back when hit, and follow the vertical aim.
  a.lean+=((dash?.5:0)-a.lean)*ease;const pitch=alive&&!dodge?(p.pitch||0):0;
+ // Guard pose: the torso and the weapon arm show which side is being guarded (0 left, 1 top, 2 right).
+ const guarding=alive&&!dodge&&!dash&&!melee&&!a.attack&&!(p.stun>0),stance=p.stance??1;a.guardPose+=((guarding?1:0)-a.guardPose)*ease;a.guardSide+=((stance-1)-a.guardSide)*ease;a.guardTop+=((stance===1?1:0)-a.guardTop)*ease;
+ if(a.guardPose>.01){turn(a.bones.Spine,a.model,UP,-a.guardSide*.34*a.guardPose);turn(a.bones.RightArm,a.model,RIGHT,-.55*a.guardTop*a.guardPose);turn(a.bones.RightArm,a.model,UP,-a.guardSide*.45*a.guardPose);}
  turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.hit*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
- if(a.drawn){const stab=a.attack==='rogue2';a.drawn.visible=stab;a.sheath.visible=!stab;}
+ if(a.drawn){const stab=a.attack==='rogue2'||!!melee;a.drawn.visible=stab;a.sheath.visible=!stab;}
  if(a.trail)updateTrail(a,dt);
  a.ghost+=((dash?1:0)-a.ghost)*(1-Math.exp(-dt*20));for(const m of a.toon){m.userData.uniforms.uHit.value=a.hit;m.userData.uniforms.uGhost.value=a.ghost;}
 }

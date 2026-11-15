@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createWeapon,disposeModel} from '../public/assets/models.js';
-import {ACTIONS,CLIP_NAMES,LOWER_BONES,attackOf,pickLayers,legTwist} from '../public/assets/anim-state.js';
+import {ACTIONS,CLIP_NAMES,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from '../public/assets/anim-state.js';
 
 // Animation rules.
 const alive={hp:100,y:0,moving:false,parry:0,parryFlash:0,burst:null};
@@ -18,6 +18,12 @@ assert.deepEqual(pickLayers({...alive,burst:{kind:'dodge'}},'mage0'),{upper:'Rol
 assert.deepEqual(pickLayers({...alive,burst:{kind:'dash'}},null),{upper:'Dash',lower:'Dash'});
 assert.deepEqual(pickLayers({...alive,burst:{kind:'charge'}},'knight1'),{upper:'knight1',lower:'knight1'});
 assert.deepEqual(pickLayers({...alive,hp:0,burst:{kind:'dodge'},parry:1},'knight0'),{upper:'Death',lower:'Death'},'death wins over everything');
+assert.deepEqual(pickLayers({...alive,classId:'mage',attack:{kind:'heavy',dir:0}},null),{upper:'heavy0',lower:'heavy0'},'a melee swing uses the whole body');
+assert.deepEqual(pickLayers({...alive,classId:'knight',attack:{kind:'guardbreak',dir:1}},null),{upper:'bash',lower:'bash'});assert.equal(meleeOf('rogue',{kind:'guardbreak',dir:2}),'kick');assert.equal(meleeOf('elf',null),null);
+assert.deepEqual(pickLayers({...alive,stun:.4,attack:{kind:'light',dir:1}},null),{upper:'Stagger',lower:'Stagger'},'a stun interrupts everything but death and dodge');
+assert.deepEqual(pickLayers({...alive,guard:.2,moving:true,guardMode:true},null),{upper:'Block',lower:'Walk'},'blocking while walking in guard');
+assert.deepEqual(pickLayers({...alive,moving:true,guardMode:true},null),{upper:'Walk',lower:'Walk'});
+for(const kind of ['light','heavy'])for(const dir of [0,1,2])assert(ACTIONS[kind+dir].once,kind+dir);
 for(const classId of ['knight','mage','rogue','elf'])for(let i=0;i<3;i++){const id=attackOf(classId,i);if(classId==='rogue'&&i===1)assert.equal(id,null);else assert(ACTIONS[id].once&&ACTIONS[id].time>0,id);}
 assert.equal(attackOf('mage',7),null);assert.equal(attackOf('toString',''),null);
 for(const a of Object.values(ACTIONS)){assert(CLIP_NAMES.includes(a.clip));if(a.from!==undefined)assert(a.to>a.from);}
@@ -29,7 +35,7 @@ assert(legTwist(-1,1).backwards&&legTwist(-1,1).angle<0,'back-right pedals backw
 // Shipped character files: skinned, 24 joints, every clip present and well formed.
 const manifest=JSON.parse(fs.readFileSync('public/assets/manifest.json','utf8'));assert.equal(manifest.characters.length,7);
 for(const classId of ['mage','knight','rogue','elf'])for(const bodyType of classId==='elf'?['female']:['male','female']){
- const name=classId+'-'+bodyType,file=fs.readFileSync('public/assets/glb/'+name+'.glb');assert.equal(file.readUInt32LE(0),0x46546c67);assert.equal(file.readUInt32LE(8),file.length);assert(file.length<2.5e6,name+' stays under 2.5 MB');
+ const name=classId+'-'+bodyType,file=fs.readFileSync('public/assets/glb/'+name+'.glb');assert.equal(file.readUInt32LE(0),0x46546c67);assert.equal(file.readUInt32LE(8),file.length);assert(file.length<3.2e6,name+' stays under 3.2 MB');
  const n=file.readUInt32LE(12),gltf=JSON.parse(file.subarray(20,20+n).toString()),bin=file.subarray(28+n),skin=gltf.skins[0],prim=gltf.meshes[0].primitives[0];
  assert.equal(skin.joints.length,24);for(const bone of LOWER_BONES.concat(['Spine02','Spine','Head','LeftHand','RightHand','LeftForeArm']))assert(skin.joints.some(j=>gltf.nodes[j].name===bone),name+' has bone '+bone);
  for(const key of ['POSITION','NORMAL','TEXCOORD_0','JOINTS_0','WEIGHTS_0'])assert(prim.attributes[key]!==undefined,name+' '+key);
@@ -47,4 +53,4 @@ for(const classId of ['mage','knight','rogue','elf'])for(const bodyType of class
  assert.equal(manifest.characters.find(c=>c.classId===classId&&c.bodyType===bodyType).bytes,file.length);
 }
 for(const kind of ['sword','dagger','staff','shield','spear']){const w=createWeapon(kind);assert(w.children.length>2);disposeModel(w);}
-console.log('PASS: animation layers and leg twist rules, seven skinned characters with 24 joints and 12 clips each, every clip but the fall stays in place, unit rotations, four weapons');
+console.log('PASS: animation layers and leg twist rules, seven skinned characters with 24 joints and 21 clips each, every clip but the fall stays in place, unit rotations, four weapons');

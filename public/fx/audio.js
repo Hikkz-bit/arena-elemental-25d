@@ -22,6 +22,8 @@ export function createAudio(){
   stab:(d,t)=>{noise(d,t,{f0:900,f1:2600,q:2,dur:.1,peak:.26});tone(d,t,{type:'triangle',f0:520,f1:260,dur:.08,peak:.1});},
   hit:(d,t)=>{tone(d,t,{f0:175,f1:55,dur:.14,peak:.5});noise(d,t,{type:'lowpass',f0:1100,f1:300,dur:.07,peak:.34});},
   hurt:(d,t)=>{tone(d,t,{f0:115,f1:42,dur:.24,peak:.6});noise(d,t,{type:'lowpass',f0:700,f1:180,dur:.14,peak:.4});},
+  block:(d,t)=>{for(const [f,p] of [[620,.2],[930,.12],[1480,.07]])tone(d,t,{type:'triangle',f0:f,f1:f*.97,dur:.16,peak:p,attack:.002});noise(d,t,{type:'bandpass',f0:1800,q:2,dur:.06,peak:.3});},
+  guardbreak:(d,t)=>{tone(d,t,{f0:210,f1:60,dur:.2,peak:.5});noise(d,t,{type:'lowpass',f0:1600,f1:300,dur:.12,peak:.4});tone(d,t+.03,{type:'square',f0:330,f1:120,dur:.12,peak:.08});},
   parry:(d,t)=>{for(const [f,p] of [[1180,.22],[1760,.18],[2640,.13],[3340,.09]])tone(d,t,{type:'triangle',f0:f,f1:f*.985,dur:.4,peak:p,attack:.002});noise(d,t,{type:'highpass',f0:3500,dur:.05,peak:.3});},
   fire:(d,t)=>{noise(d,t,{type:'lowpass',f0:320,f1:1500,dur:.34,peak:.36});tone(d,t,{type:'sawtooth',f0:190,f1:85,dur:.3,peak:.09});},
   ice:(d,t)=>{tone(d,t,{f0:1900,f1:2700,dur:.24,peak:.12});tone(d,t,{f0:2450,f1:3200,dur:.2,peak:.09});noise(d,t,{type:'highpass',f0:4200,dur:.16,peak:.14});},
