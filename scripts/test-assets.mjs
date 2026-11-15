@@ -2,6 +2,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createWeapon,disposeModel} from '../public/assets/models.js';
 import {ACTIONS,CLIP_NAMES,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from '../public/assets/anim-state.js';
+import * as T from '../public/vendor/three.js';
+import {createPoseLayer,beginPose,endPose} from '../public/assets/pose-layer.js';
+
+// A procedural rotation must be added once per frame even when the clip holds the same value on consecutive frames.
+{
+ const rig=()=>{const root=new T.Group(),bone=new T.Bone();bone.name='Spine';root.add(bone);const mixer=new T.AnimationMixer(root);
+  mixer.clipAction(new T.AnimationClip('Hold',1,[new T.QuaternionKeyframeTrack('Spine.quaternion',[0,1],[0,0,0,1,0,0,0,1])])).play();return {bone,mixer};};
+ const twist=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),.3),angle=q=>2*Math.acos(Math.min(1,Math.abs(q.w)));
+ const plain=rig();for(let i=0;i<5;i++){plain.mixer.update(1/60);plain.bone.quaternion.premultiply(twist);}
+ assert(angle(plain.bone.quaternion)>1.4,'three leaves an unchanged bone alone, so the twist piles up without the pose layer');
+ const fixed=rig(),layer=createPoseLayer([fixed.bone,undefined]);
+ for(let i=0;i<5;i++){fixed.mixer.update(1/60);beginPose(layer);fixed.bone.quaternion.premultiply(twist);endPose(layer);assert(Math.abs(angle(fixed.bone.quaternion)-.3)<1e-6,'the twist is applied once on frame '+i);}
+}
+
 
 // Animation rules.
 const alive={hp:100,y:0,moving:false,parry:0,parryFlash:0,burst:null};

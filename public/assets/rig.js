@@ -4,6 +4,7 @@ import {clone as cloneSkinned} from '../vendor/SkeletonUtils.js';
 import {createWeapon} from './models.js';
 import {ACTIONS,LOWER_BONES,attackOf,meleeOf,pickLayers,legTwist} from './anim-state.js';
 import {toonMaterial,outlineMaterial} from './toon.js';
+import {createPoseLayer,beginPose,endPose} from './pose-layer.js';
 
 // Sculpted, skinned characters. Each GLB carries its own copy of the 12 clips; here they are cut into
 // actions, split into an upper and a lower body layer, and blended by the player state.
@@ -73,29 +74,50 @@ function attach(a,asset){
  }
  a.mixer=new T.AnimationMixer(model);a.actions=new Map();for(const [id,c] of asset.actions){a.actions.set(id+'.U',a.mixer.clipAction(c.U));a.actions.set(id+'.L',a.mixer.clipAction(c.L));}
  if(a.blade)a.trail=createTrail(a,TRAIL[a.classId]);
+ // Every bone that receives a procedural rotation in animateCharacter.
+ a.pose=createPoseLayer(['Hips','Spine','Spine02','Head','RightArm'].map(n=>a.bones[n]));
  a.ready=true;
 }
 
 export function createCharacter(classId='mage',bodyType='male'){
  const root=new T.Group();root.name=classId+'_'+bodyType;root.userData.asset={classId,bodyType,style:'Sculpted stylized fantasy',version:2};
- const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,melee:null,meleeId:null,lastStun:0,lastGuard:0,guardPose:0,guardSide:0,guardTop:0,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,layers:{U:{id:null,action:null},L:{id:null,action:null}},
+ const a={root,classId,bodyType,hit:0,ready:false,disposed:false,attack:null,melee:null,meleeId:null,lastStun:0,lastGuard:0,guardPose:0,guardSide:0,guardTop:0,attackLeft:0,lastCast:0,twist:0,turnAngle:0,lean:0,ghost:0,flinch:0,layers:{U:{id:null,action:null,entry:null,fade:.16,mix:[]},L:{id:null,action:null,entry:null,fade:.16,mix:[]}},
   dispose(){a.disposed=true;a.trail?.mesh.removeFromParent();root.removeFromParent();a.mixer?.stopAllAction();for(const m of a.materials||[])m.dispose();for(const g of a.geometries||[])g.dispose();a.skeleton?.dispose();}};
  a.loaded=loadCharacter(classId,bodyType).then(asset=>{if(!a.disposed)attach(a,asset);return a;});
  return a;
 }
 
+// Each layer keeps the actions that are still on screen and their weights (always adding up to 1). The weights
+// are moved here, not by three's crossFadeTo: that one restarts both sides from 1 and 0, so a change that
+// arrives in the middle of a blend (a tap on a movement key, a hit during a swing) made the pose jump.
 function setLayer(a,key,id,restart,runScale){
  const layer=a.layers[key],def=ACTIONS[id];
  if(layer.id!==id||(restart&&def.once)){
-  const again=layer.id===id;layer.second=again&&!layer.second;
-  const next=a.actions.get(id+(layer.second?'#2':'')+'.'+key),snap=layer.id===null||layer.id==='Death',fade=def.once?.07:.16,other=a.layers[key==='U'?'L':'U'];
-  next.reset();next.setLoop(def.once?T.LoopOnce:T.LoopRepeat,Infinity);next.clampWhenFinished=!!def.once;next.setEffectiveWeight(1);
-  if(!def.once&&other.id===id&&other.action)next.time=other.action.time; // both halves of a loop stay in phase
-  next.play();
-  if(layer.action&&layer.action!==next){if(snap)layer.action.stop();else layer.action.crossFadeTo(next,fade,false);}
-  layer.id=id;layer.action=next;
+  const snap=layer.id===null||layer.id==='Death',other=a.layers[key==='U'?'L':'U'],weightOf=action=>layer.mix.find(e=>e.action===action)?.weight??0;
+  if(snap){for(const e of layer.mix)e.action.stop();layer.mix.length=0;}
+  let next=a.actions.get(id+'.'+key),entry=layer.mix.find(e=>e.action===next);
+  if(def.once){
+   // A swing always starts on its first frame: take the copy of the clip that is not on screen (or the fainter one).
+   const second=a.actions.get(id+'#2.'+key);if(weightOf(second)<weightOf(next))next=second;
+   entry=layer.mix.find(e=>e.action===next);if(entry)entry.weight=0;
+  }
+  if(!entry||def.once){
+   next.reset();next.setLoop(def.once?T.LoopOnce:T.LoopRepeat,Infinity);next.clampWhenFinished=!!def.once;
+   if(!def.once&&other.id===id&&other.action)next.time=other.action.time; // both halves of a loop stay in phase
+   next.play();
+  } // a loop that was still fading out is picked up where it is
+  if(layer.entry&&layer.entry.action!==next&&ACTIONS[layer.id]?.once)layer.entry.action.paused=true;
+  if(!entry){entry={action:next,weight:0};layer.mix.push(entry);}
+  if(layer.mix.length===1)entry.weight=1;
+  layer.id=id;layer.action=next;layer.entry=entry;layer.fade=def.once?.07:.16;
  }
  layer.action.timeScale=id==='Run'?runScale:def.time?a.asset.actions.get(id).duration/def.time:1;
+}
+function blendLayer(layer,dt){
+ const target=layer.entry;if(!target)return;
+ target.weight=Math.min(1,target.weight+dt/layer.fade);let rest=0;for(const e of layer.mix)if(e!==target)rest+=e.weight;
+ if(rest<1e-4)target.weight=1;const scale=rest<1e-4?0:(1-target.weight)/rest;
+ for(let i=layer.mix.length-1;i>=0;i--){const e=layer.mix[i];if(e!==target){e.weight*=scale;if(e.weight<1e-3){e.action.stop();layer.mix.splice(i,1);continue;}}e.action.setEffectiveWeight(e.weight);}
 }
 
 // p: player snapshot plus `moving` and optionally `move:{f,s}` (velocity forward/right relative to the aim).
@@ -111,7 +133,7 @@ export function animateCharacter(a,p,time,dt=1/60){
  const runScale=RUN_SPEED[a.classId]/4.2*(p.slow>0?.55:1)*(legs.backwards?-.85:1);
  setLayer(a,'L',layers.lower,restart,runScale);setLayer(a,'U',layers.upper,restart,runScale);
  for(const key of ['L','U'])if(a.layers[key].id==='Walk')a.layers[key].action.timeScale=legs.backwards?-1.15:1.15;
- a.mixer.update(dt);
+ blendLayer(a.layers.L,dt);blendLayer(a.layers.U,dt);a.mixer.update(dt);beginPose(a.pose);
  const ease=1-Math.exp(-dt*14),dodge=p.burst?.kind==='dodge',dash=layers.lower==='Dash',alive=p.hp>0;
  // Legs follow the direction of travel while the torso keeps aiming.
  a.twist+=((running||layers.lower==='Walk'?legs.angle:0)-a.twist)*ease;
@@ -119,11 +141,12 @@ export function animateCharacter(a,p,time,dt=1/60){
  // The dash roll faces where it travels; it eases back to the aim afterwards.
  if(dodge)a.turnAngle=p.burst.angle||0;else a.turnAngle+=(0-a.turnAngle)*ease;a.pivot.rotation.y=Math.PI-a.turnAngle;
  // Lean into a sprint, bend back when hit, and follow the vertical aim.
- a.lean+=((dash?.5:0)-a.lean)*ease;const pitch=alive&&!dodge?(p.pitch||0):0;
+ a.lean+=((dash?.5:0)-a.lean)*ease;a.flinch+=(a.hit-a.flinch)*(1-Math.exp(-dt*28));const pitch=alive&&!dodge?(p.pitch||0):0;
  // Guard pose: the torso and the weapon arm show which side is being guarded (0 left, 1 top, 2 right).
  const guarding=alive&&!dodge&&!dash&&!melee&&!a.attack&&!(p.stun>0),stance=p.stance??1;a.guardPose+=((guarding?1:0)-a.guardPose)*ease;a.guardSide+=((stance-1)-a.guardSide)*ease;a.guardTop+=((stance===1?1:0)-a.guardTop)*ease;
  if(a.guardPose>.01){turn(a.bones.Spine,a.model,UP,-a.guardSide*.34*a.guardPose);turn(a.bones.RightArm,a.model,RIGHT,-.55*a.guardTop*a.guardPose);turn(a.bones.RightArm,a.model,UP,-a.guardSide*.45*a.guardPose);}
- turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.hit*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
+ turn(a.bones.Spine02,a.model,RIGHT,a.lean-a.flinch*.28);turn(a.bones.Spine,a.model,RIGHT,-pitch*.32);turn(a.bones.Head,a.model,RIGHT,-pitch*.22);
+ endPose(a.pose);
  if(a.drawn){const stab=a.attack==='rogue2'||!!melee;a.drawn.visible=stab;a.sheath.visible=!stab;}
  if(a.trail)updateTrail(a,dt);
  a.ghost+=((dash?1:0)-a.ghost)*(1-Math.exp(-dt*20));for(const m of a.toon){m.userData.uniforms.uHit.value=a.hit;m.userData.uniforms.uGhost.value=a.ghost;}

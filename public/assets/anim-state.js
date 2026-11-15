@@ -12,7 +12,7 @@ export const ACTIONS={
  Run:{clip:'Run'},
  Jump:{clip:'Jump',time:.7,once:true},
  Parry:{clip:'Parry',from:.3,to:1.5},
- Roll:{clip:'Roll',from:.55,to:1.55,time:.45,once:true},
+ Roll:{clip:'Roll',from:.55,to:.85,time:.2,once:true},
  Dash:{clip:'Run',time:.36},
  Death:{clip:'Death',time:1.7,once:true},
  // Duel moves. The window of each clip is chosen so the blade lands exactly when the server resolves the hit.
