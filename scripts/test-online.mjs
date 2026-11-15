@@ -1,4 +1,4 @@
-// Two real clients against a running server: room, join, start, movement, dash and a hit.
+// Real clients against a running server: a full room of four, a fifth refused, start, movement, dash and a hit.
 //   node scripts/test-online.mjs [https://arena-elemental-25d.onrender.com]
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -14,10 +14,15 @@ function client(){
  c.input=input=>ws.send(JSON.stringify({action:'input',seq:++c.seq,input:{forward:0,strafe:0,yaw:0,pitch:0,jump:false,parry:false,dash:false,fire:[false,false,false],...input}}));
  return c;
 }
-const a=client(),b=client();await Promise.all([a.open,b.open]);
+const a=client(),b=client(),c=client(),d=client(),e=client();await Promise.all([a,b,c,d,e].map(x=>x.open));
 const created=await a.call('create',{name:'Ana',token:randomUUID(),classId:'knight',bodyType:'female',mapId:'forest'}),code=created.room.code,idA=created.id;
 const joined=await b.call('join',{name:'Bruno',token:randomUUID(),classId:'mage',bodyType:'male',code}),idB=joined.id;
 assert.equal(joined.room.players.length,2);assert.deepEqual(joined.room.players.map(p=>p.classId),['knight','mage']);
+await c.call('join',{name:'Caio',token:randomUUID(),classId:'rogue',bodyType:'male',code});
+const full=await d.call('join',{name:'Dani',token:randomUUID(),classId:'elf',bodyType:'female',code});
+assert.equal(full.room.players.length,4,'a sala comporta quatro jogadores');assert.deepEqual(full.room.players.map(p=>p.slot).sort(),[0,1,2,3],'cada jogador tem a sua vaga');
+assert.equal(new Set(full.room.players.map(p=>p.x+','+p.z)).size,4,'cada jogador nasce em um canto');
+await assert.rejects(e.call('join',{name:'Eva',token:randomUUID(),classId:'mage',bodyType:'female',code}),/4 jogadores/,'o quinto jogador é recusado');e.ws.close();
 await a.call('start');
 for(let i=0;i<80&&a.room.phase!=='playing';i++)await wait(100);assert.equal(a.room.phase,'playing','a partida começa depois da contagem');
 const me=(c,id)=>c.room.players.find(p=>p.id===id),start={...me(a,idA)},toB=Math.atan2(me(a,idB).x-start.x,-(me(a,idB).z-start.z));
@@ -29,5 +34,5 @@ await wait(300);
 const end=me(b,idA);assert(Math.hypot(end.x-start.x,end.z-start.z)>3,'Bruno vê Ana se mover');assert(dodge,'o dash aparece no estado da sala');assert(end.dashCd>0,'o dash entra em recarga');
 assert(a.room.events.some(e=>e.type==='cast'&&e.owner===idB)||me(a,idB).cd[0]>=0,'a habilidade do Bruno chega para a Ana');
 assert.equal(me(a,idB).connected,true);assert(!JSON.stringify(a.room).includes('"hash"'));
-await a.call('leave');await b.call('leave');a.ws.close();b.ws.close();
-console.log('PASS online: sala '+code+', dois jogadores, início, movimento visto pelos dois, dash com recarga em '+origin);
+for(const x of [a,b,c,d]){await x.call('leave');x.ws.close();}
+console.log('PASS online: sala '+code+', quatro jogadores e o quinto recusado, início, movimento visto pelos outros, dash com recarga em '+origin);

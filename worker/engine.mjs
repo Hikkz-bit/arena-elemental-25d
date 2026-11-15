@@ -1,10 +1,10 @@
 import {classOf} from '../public/catalog.js';
 import {motion,move,forward,clamp,segmentDistance,PILLARS} from '../public/physics.js';
-export const MAX=3,GOAL=5;
+export const MAX=4,GOAL=5;
 // Universal dash (Shift): short burst along the held direction with brief invulnerability, like the dodge of arena brawlers.
 export const DASH={range:2.8,duration:.2,cooldown:1,inv:.2};
 const idle=()=>({forward:0,strafe:0,jump:false,parry:false,dash:false,light:false,heavy:false,guardbreak:false,guard:false,fire:[false,false,false]});
-const spawn=slot=>[[-6,6],[6,6],[0,-7]][slot];
+const spawn=slot=>[[-6,6],[6,6],[-6,-6],[6,-6]][slot];
 function place(p){const [x,z]=spawn(p.slot);Object.assign(p,{x,z,y:0,vy:0,yaw:Math.atan2(-x,z),pitch:0});}
 export function newRoom(code,now){return {code,mapId:'abbey',phase:'lobby',players:[],shots:[],bolts:[],events:[],eid:0,host:null,last:now,elapsed:0,round:0,winner:null};}
 export function newPlayer(id,hash,name,slot,now){const p={id,hash,name,slot,classId:'mage',bodyType:'male',maxHp:100,hp:100,speed:115,kills:0,deaths:0,seen:now,input:idle(),seq:-1,cd:[0,0,0],cast:0,element:0,parry:0,parryCd:0,parryFlash:0,parryHeld:false,parryQueued:false,dashCd:0,dashHeld:false,dashQueued:false,stance:1,stanceAge:9,posture:0,postureWait:0,broken:0,attack:null,stun:0,guard:0,guardMode:false,buffered:null,slow:0,inv:0,respawn:0,burst:null,moving:false};place(p);return p;}
